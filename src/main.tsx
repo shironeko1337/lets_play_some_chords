@@ -1,35 +1,132 @@
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import ReactDOM from "react-dom/client";
 import { Slider } from "@heroui/slider";
 import { Chip } from "@heroui/chip";
 import { RadioGroup, Radio } from "@heroui/radio";
+import { Select, SelectItem } from "@heroui/select";
 import { HeroUIProvider } from "@heroui/system";
 import "./index.css";
-import { IonicScale, midi2note, playChord, playNote } from "./util";
+import {
+  getChordMIDI,
+  IonicScale,
+  loadInstrument,
+  midi2note,
+  play,
+} from "./util";
+
+const INSTRUMENTS = [
+  { name: "Piano", key: "piano" },
+  { name: "Guitar (Acoustic)", key: "guitar-acoustic" },
+  { name: "Guitar (Electric)", key: "guitar-electric" },
+  { name: "Guitar (Nylon)", key: "guitar-nylon" },
+  { name: "Violin", key: "violin" },
+  { name: "Cello", key: "cello" },
+  { name: "Bass (Electric)", key: "bass-electric" },
+  { name: "Contrabass", key: "contrabass" },
+  { name: "Harp", key: "harp" },
+  { name: "Organ", key: "organ" },
+  { name: "Harmonium", key: "harmonium" },
+  { name: "Flute", key: "flute" },
+  { name: "Clarinet", key: "clarinet" },
+  { name: "Saxophone", key: "saxophone" },
+  { name: "Trumpet", key: "trumpet" },
+  { name: "Trombone", key: "trombone" },
+  { name: "French Horn", key: "french-horn" },
+  { name: "Tuba", key: "tuba" },
+  { name: "Bassoon", key: "bassoon" },
+  { name: "Xylophone", key: "xylophone" },
+];
 
 const SCALES = [
-  { name: "Tonic", color: "primary" as const },
-  { name: "Supertonic", color: "secondary" as const },
-  { name: "Mediant", color: "success" as const },
-  { name: "Subdominant", color: "warning" as const },
-  { name: "Dominant", color: "danger" as const },
-  { name: "Submediant", color: "primary" as const },
-  { name: "Leading-tone", color: "secondary" as const },
+  { name: "I (Tonic chord) 主和弦", color: "primary" as const, shift: 0 },
+  {
+    name: "ii (Supertonic chord) 上主和弦",
+    color: "secondary" as const,
+    shift: 2,
+  },
+  { name: "iii (Mediant chord) 中和弦", color: "success" as const, shift: 4 },
+  {
+    name: "IV (Subdominant chord) 下属和弦",
+    color: "warning" as const,
+    shift: 5,
+  },
+  { name: "V (Dominant chord) 属和弦", color: "danger" as const, shift: 7 },
+  {
+    name: "vi (Submediant chord) 下中和弦",
+    color: "primary" as const,
+    shift: 9,
+  },
+  {
+    name: "vii° (Leading-tone chord) 导和弦",
+    color: "secondary" as const,
+    shift: 11,
+  },
+  { name: "Customized 自定义", color: "default" as const, shift: -1 },
 ];
 
 const CHORD_TYPES = ["Traid", "Seventh"];
 
 function App() {
-  const [instrument, setInstrument] = useState("piano");
-  const [rootMIDI, setRootMIDI] = useState(40); // E2
-  const [chordType, setChordTypes] = useState(1);
-  const ctxRef = useRef(new AudioContext());
-  const ctx = ctxRef.current;
+  const [hasStarted, setHasStarted] = useState(false);
+  const [instrumentName, setInstrumentName] = useState<any>(null);
+  const [instrument, setInstrument] = useState<any>(null);
+  const [rootMIDI, setRootMIDI] = useState(52); // E3
+  const [chordType, setChordTypes] = useState(0);
+  const [volume, setVolume] = useState(-10); // Volume in dB
+  const [instrumentLoading, setInstrumentLoading] = useState(false);
+  const [playingNotes, setPlayingNotes] = useState("-");
+  const [highlightedNotes, setHighlightedNotes] = useState<any>([]);
+  const [freeNotesMode, setFreeNotesMode] = useState(false);
+  const [lastPlayedNotes, setLastPlayedNotes] = useState<any>([]);
+
+  const handleStart = () => {
+    setHasStarted(true);
+    setInstrumentName("piano");
+  };
+
+  useEffect(() => {
+    if (!instrumentName || instrumentLoading) return;
+    setInstrumentLoading(true);
+    if (instrument) {
+      instrument.dispose();
+    }
+    loadInstrument(instrumentName)
+      .then((instrument: any) => {
+        setInstrumentLoading(false);
+        setInstrument(instrument);
+      })
+      .catch(() => setInstrumentLoading(false));
+  }, [instrumentName]);
+
+  useEffect(() => {
+    if (instrument) {
+      instrument.volume.value = volume;
+    }
+  }, [volume, instrument]);
+
+  useEffect(() => {
+    if (freeNotesMode) {
+      setLastPlayedNotes([]);
+    }
+  }, [freeNotesMode]);
 
   return (
     <HeroUIProvider>
       <div className="min-h-screen bg-gray-50 p-8">
-        <div className="max-w-7xl mx-auto bg-white rounded-xl shadow-lg p-8">
+        <div className="max-w-7xl mx-auto bg-white rounded-xl shadow-lg p-8 relative">
+          {/* Start Backdrop */}
+          {!hasStarted && (
+            <div className="absolute inset-0 bg-black/30 backdrop-blur-sm rounded-xl flex items-center justify-center z-50">
+              <button
+                onClick={handleStart}
+                className="px-8 py-4 text-2xl font-bold bg-blue-500 text-white rounded-xl
+                         hover:bg-blue-600 active:scale-95 transition-all shadow-2xl"
+              >
+                Start
+              </button>
+            </div>
+          )}
+
           <div className="flex gap-12">
             {/* Left Panel */}
             <div className="w-80 flex flex-col gap-8">
@@ -38,14 +135,20 @@ function App() {
                 <h2 className="text-lg font-semibold text-gray-800">
                   Instrument
                 </h2>
-                <RadioGroup
-                  value={instrument}
-                  onValueChange={setInstrument}
-                  orientation="vertical"
+                <Select
+                  label="Select an instrument"
+                  selectedKeys={instrumentName ? [instrumentName] : []}
+                  onSelectionChange={(keys) => {
+                    const selected = Array.from(keys)[0];
+                    setInstrumentName(selected as string);
+                  }}
                 >
-                  <Radio value="piano">Piano</Radio>
-                  <Radio value="guitar">Guitar</Radio>
-                </RadioGroup>
+                  {INSTRUMENTS.map((instrument) => (
+                    <SelectItem key={instrument.key}>
+                      {instrument.name}
+                    </SelectItem>
+                  ))}
+                </Select>
               </div>
 
               {/* Chord Type Choice */}
@@ -75,19 +178,38 @@ function App() {
                   value={rootMIDI}
                   onChange={(value) => setRootMIDI(value as number)}
                   minValue={40}
-                  maxValue={64}
+                  maxValue={76}
                   step={1}
                   showSteps={true}
                   marks={[
                     { value: 40, label: "E2" },
                     { value: 52, label: "E3" },
                     { value: 64, label: "E4" },
+                    { value: 76, label: "E5" },
                   ]}
                   className="max-w-md"
                   aria-label="Root Note"
                 />
                 <p className="text-sm text-gray-600 mt-2">
                   Current: {midi2note(rootMIDI)}
+                </p>
+              </div>
+
+              {/* Volume Slider */}
+              <div className="flex flex-col gap-3">
+                <h2 className="text-lg font-semibold text-gray-800">Volume</h2>
+                <Slider
+                  value={volume}
+                  onChange={(value) => setVolume(value as number)}
+                  minValue={-60}
+                  maxValue={0}
+                  step={0.1}
+                  showSteps={false}
+                  className="max-w-md"
+                  aria-label="Volume"
+                />
+                <p className="text-sm text-gray-600 mt-2">
+                  {volume.toFixed(1)} dB
                 </p>
               </div>
             </div>
@@ -98,14 +220,36 @@ function App() {
               <div className="flex flex-wrap gap-3">
                 {SCALES.map((scale, index) => (
                   <Chip
+                    className="cursor-pointer"
                     key={scale.name}
                     color={scale.color}
                     variant="flat"
                     onClick={() => {
-                      playChord(ctx, {
-                        rootMIDI,
-                        chordMIDI: IonicScale[index][chordType],
-                      });
+                      if (scale.shift > -1) {
+                        setFreeNotesMode(false);
+                        const chordRootMIDI = rootMIDI + scale.shift;
+                        const noteMIDI = getChordMIDI(
+                          chordRootMIDI,
+                          IonicScale[index][chordType]
+                        );
+                        setHighlightedNotes(noteMIDI);
+                        setPlayingNotes(
+                          play({
+                            noteMIDI,
+                            instrument,
+                          })
+                        );
+                      } else {
+                        if (freeNotesMode && lastPlayedNotes) {
+                          setPlayingNotes(
+                            play({
+                              noteMIDI: lastPlayedNotes,
+                              instrument,
+                            })
+                          );
+                        }
+                        setFreeNotesMode(true);
+                      }
                     }}
                   >
                     {scale.name}
@@ -117,19 +261,43 @@ function App() {
               <div className="grid grid-cols-6 gap-3">
                 {Array.from({ length: 24 }, (_, i) => {
                   const noteMIDI = i + rootMIDI;
+                  const highlighted = freeNotesMode
+                    ? lastPlayedNotes.includes(noteMIDI)
+                    : highlightedNotes.includes(noteMIDI);
+
                   return (
                     <button
-                      onClick={() => playNote(ctx, { noteMIDI })}
+                      onClick={() => {
+                        if (freeNotesMode) {
+                          setLastPlayedNotes(
+                            [noteMIDI, ...lastPlayedNotes].slice(
+                              0,
+                              chordType === 0 ? 3 : 4
+                            )
+                          );
+                        }
+                        setPlayingNotes(
+                          play({
+                            noteMIDI: [noteMIDI],
+                            instrument,
+                          })
+                        );
+                      }}
                       key={i + rootMIDI}
-                      className="px-4 py-3 text-lg font-semibold border-2 border-gray-200
-                             bg-white rounded-lg hover:bg-gray-50 hover:border-blue-500
-                             active:scale-95 transition-all"
+                      className={`cursor-pointer px-4 py-3 text-lg font-semibold border-2 border-gray-200
+                             ${
+                               highlighted ? `bg-orange-400` : `bg-white`
+                             } rounded-lg hover:bg-gray-50 hover:border-blue-500
+                             active:scale-95 transition-all`}
                     >
                       {midi2note(noteMIDI)}
                     </button>
                   );
                 })}
               </div>
+              <h2 className="text-lg font-semibold text-gray-800">Info</h2>
+              <div>Last played notes: {playingNotes}</div>
+              <div>{instrumentLoading ? "Loading instruments..." : ""}</div>
             </div>
           </div>
         </div>
@@ -138,8 +306,4 @@ function App() {
   );
 }
 
-ReactDOM.createRoot(document.getElementById("root")!).render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>
-);
+ReactDOM.createRoot(document.getElementById("root")!).render(<App />);

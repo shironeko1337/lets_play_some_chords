@@ -1,15 +1,511 @@
+import * as Tone from "tone";
+
+const SAMPLE_BASE_URL = "http://localhost:5173/samples";
+
+export const SAMPLE_FILES: any = {
+  "bass-electric": [
+    "As1.mp3",
+    "As2.mp3",
+    "As3.mp3",
+    "As4.mp3",
+    "Cs1.mp3",
+    "Cs2.mp3",
+    "Cs3.mp3",
+    "Cs4.mp3",
+    "Cs5.mp3",
+    "E1.mp3",
+    "E2.mp3",
+    "E3.mp3",
+    "E4.mp3",
+    "G1.mp3",
+    "G2.mp3",
+    "G3.mp3",
+    "G4.mp3",
+  ],
+  bassoon: [
+    "A2.mp3",
+    "A3.mp3",
+    "A4.mp3",
+    "C3.mp3",
+    "C4.mp3",
+    "C5.mp3",
+    "E4.mp3",
+    "G2.mp3",
+    "G3.mp3",
+    "G4.mp3",
+  ],
+  cello: [
+    "A2.mp3",
+    "A3.mp3",
+    "A4.mp3",
+    "As2.mp3",
+    "As3.mp3",
+    "B2.mp3",
+    "B3.mp3",
+    "B4.mp3",
+    "C2.mp3",
+    "C3.mp3",
+    "C4.mp3",
+    "C5.mp3",
+    "Cs3.mp3",
+    "Cs4.mp3",
+    "D2.mp3",
+    "D3.mp3",
+    "D4.mp3",
+    "Ds2.mp3",
+    "Ds3.mp3",
+    "Ds4.mp3",
+    "E2.mp3",
+    "E3.mp3",
+    "E4.mp3",
+    "F2 v2.mp3",
+    "F2.mp3",
+    "F3.mp3",
+    "F4.mp3",
+    "Fs3.mp3",
+    "Fs4.mp3",
+    "G2 v2.mp3",
+    "G2.mp3",
+    "G3.mp3",
+    "G4.mp3",
+    "Gs2.mp3",
+    "Gs3.mp3",
+    "Gs4.mp3",
+  ],
+  clarinet: [
+    "As3.mp3",
+    "As4.mp3",
+    "As5.mp3",
+    "D3.mp3",
+    "D4.mp3",
+    "D5.mp3",
+    "D6.mp3",
+    "F3.mp3",
+    "F4.mp3",
+    "F5.mp3",
+    "Fs6.mp3",
+  ],
+  contrabass: [
+    "A2.mp3",
+    "As1.mp3",
+    "B3.mp3",
+    "C2.mp3",
+    "Cs3.mp3",
+    "D2.mp3",
+    "E2.mp3",
+    "E3.mp3",
+    "Fs1.mp3",
+    "Fs2.mp3",
+    "G1.mp3",
+    "Gs2.mp3",
+    "Gs3.mp3",
+  ],
+  flute: [
+    "A4.mp3",
+    "A5.mp3",
+    "A6.mp3",
+    "C4.mp3",
+    "C5.mp3",
+    "C6.mp3",
+    "C7.mp3",
+    "E4.mp3",
+    "E5.mp3",
+    "E6.mp3",
+  ],
+  "french-horn": [
+    "A1.mp3",
+    "A3.mp3",
+    "C2.mp3",
+    "C4.mp3",
+    "D3.mp3",
+    "D5.mp3",
+    "Ds2.mp3",
+    "F3.mp3",
+    "F5.mp3",
+    "G2.mp3",
+  ],
+  "guitar-acoustic": [
+    "A2.mp3",
+    "A3.mp3",
+    "A4.mp3",
+    "As2.mp3",
+    "As3.mp3",
+    "As4.mp3",
+    "B2.mp3",
+    "B3.mp3",
+    "B4.mp3",
+    "C3.mp3",
+    "C4.mp3",
+    "C5.mp3",
+    "Cs3.mp3",
+    "Cs4.mp3",
+    "Cs5.mp3",
+    "D2.mp3",
+    "D3.mp3",
+    "D4.mp3",
+    "D5.mp3",
+    "Ds2.mp3",
+    "Ds3.mp3",
+    "Ds4.mp3",
+    "E2.mp3",
+    "E3.mp3",
+    "E4.mp3",
+    "F2.mp3",
+    "F3.mp3",
+    "F4.mp3",
+    "Fs2.mp3",
+    "Fs3.mp3",
+    "Fs4.mp3",
+    "G2.mp3",
+    "G3.mp3",
+    "G4.mp3",
+    "Gs2.mp3",
+    "Gs3.mp3",
+    "Gs4.mp3",
+  ],
+  "guitar-electric": [
+    "A2.mp3",
+    "A3.mp3",
+    "A4.mp3",
+    "A5.mp3",
+    "C3.mp3",
+    "C4.mp3",
+    "C5.mp3",
+    "C6.mp3",
+    "Cs2.mp3",
+    "Ds3.mp3",
+    "Ds4.mp3",
+    "Ds5.mp3",
+    "E2.mp3",
+    "Fs2.mp3",
+    "Fs3.mp3",
+    "Fs4.mp3",
+    "Fs5.mp3",
+  ],
+  "guitar-nylon": [
+    "A2.mp3",
+    "A3.mp3",
+    "A4.mp3",
+    "A5.mp3",
+    "As5.mp3",
+    "B1.mp3",
+    "B2.mp3",
+    "B3.mp3",
+    "B4.mp3",
+    "Cs3.mp3",
+    "Cs4.mp3",
+    "Cs5.mp3",
+    "D2.mp3",
+    "D3.mp3",
+    "D5.mp3",
+    "Ds4.mp3",
+    "E2.mp3",
+    "E3.mp3",
+    "E4.mp3",
+    "E5.mp3",
+    "Fs2.mp3",
+    "Fs3.mp3",
+    "Fs4.mp3",
+    "Fs5.mp3",
+    "G3.mp3",
+    "G5.mp3",
+    "Gs2.mp3",
+    "Gs4.mp3",
+    "Gs5.mp3",
+  ],
+  harmonium: [
+    "A2.mp3",
+    "A3.mp3",
+    "A4.mp3",
+    "As2.mp3",
+    "As3.mp3",
+    "As4.mp3",
+    "B2.mp3",
+    "B3.mp3",
+    "B4.mp3",
+    "C2.mp3",
+    "C3.mp3",
+    "C4.mp3",
+    "C5.mp3",
+    "Cs2.mp3",
+    "Cs3.mp3",
+    "Cs4.mp3",
+    "Cs5.mp3",
+    "D2.mp3",
+    "D3.mp3",
+    "D4.mp3",
+    "D5.mp3",
+    "Ds2.mp3",
+    "Ds3.mp3",
+    "Ds4.mp3",
+    "E2.mp3",
+    "E3.mp3",
+    "E4.mp3",
+    "F2.mp3",
+    "F3.mp3",
+    "F4.mp3",
+    "Fs2.mp3",
+    "Fs3.mp3",
+    "G2.mp3",
+    "G3.mp3",
+    "G4.mp3",
+    "Gs2.mp3",
+    "Gs3.mp3",
+    "Gs4.mp3",
+  ],
+  harp: [
+    "A2.mp3",
+    "A4.mp3",
+    "A6.mp3",
+    "B1.mp3",
+    "B3.mp3",
+    "B5.mp3",
+    "B6.mp3",
+    "C3.mp3",
+    "C5.mp3",
+    "D2.mp3",
+    "D4.mp3",
+    "D6.mp3",
+    "D7.mp3",
+    "E1.mp3",
+    "E3.mp3",
+    "E5.mp3",
+    "F2.mp3",
+    "F4.mp3",
+    "F6.mp3",
+    "F7.mp3",
+    "G1.mp3",
+    "G3.mp3",
+    "G5.mp3",
+  ],
+  organ: [
+    "A1.mp3",
+    "A2.mp3",
+    "A3.mp3",
+    "A4.mp3",
+    "A5.mp3",
+    "C1.mp3",
+    "C2.mp3",
+    "C3.mp3",
+    "C4.mp3",
+    "C5.mp3",
+    "C6.mp3",
+    "Ds1.mp3",
+    "Ds2.mp3",
+    "Ds3.mp3",
+    "Ds4.mp3",
+    "Ds5.mp3",
+    "Fs1.mp3",
+    "Fs2.mp3",
+    "Fs3.mp3",
+    "Fs4.mp3",
+    "Fs5.mp3",
+  ],
+  piano: [
+    "A1.mp3",
+    "A2.mp3",
+    "A3.mp3",
+    "A4.mp3",
+    "A5.mp3",
+    "A6.mp3",
+    "A7.mp3",
+    "As1.mp3",
+    "As2.mp3",
+    "As3.mp3",
+    "As4.mp3",
+    "As5.mp3",
+    "As6.mp3",
+    "As7.mp3",
+    "B1.mp3",
+    "B2.mp3",
+    "B3.mp3",
+    "B4.mp3",
+    "B5.mp3",
+    "B6.mp3",
+    "B7.mp3",
+    "C1.mp3",
+    "C2.mp3",
+    "C3.mp3",
+    "C4.mp3",
+    "C5.mp3",
+    "C6.mp3",
+    "C7.mp3",
+    "C8.mp3",
+    "Cs1.mp3",
+    "Cs2.mp3",
+    "Cs3.mp3",
+    "Cs4.mp3",
+    "Cs5.mp3",
+    "Cs6.mp3",
+    "Cs7.mp3",
+    "D1.mp3",
+    "D2.mp3",
+    "D3.mp3",
+    "D4.mp3",
+    "D5.mp3",
+    "D6.mp3",
+    "D7.mp3",
+    "Ds1.mp3",
+    "Ds2.mp3",
+    "Ds3.mp3",
+    "Ds4.mp3",
+    "Ds5.mp3",
+    "Ds6.mp3",
+    "Ds7.mp3",
+    "E1.mp3",
+    "E2.mp3",
+    "E3.mp3",
+    "E4.mp3",
+    "E5.mp3",
+    "E6.mp3",
+    "E7.mp3",
+    "F1.mp3",
+    "F2.mp3",
+    "F3.mp3",
+    "F4.mp3",
+    "F5.mp3",
+    "F6.mp3",
+    "F7.mp3",
+    "Fs1.mp3",
+    "Fs2.mp3",
+    "Fs3.mp3",
+    "Fs4.mp3",
+    "Fs5.mp3",
+    "Fs6.mp3",
+    "Fs7.mp3",
+    "G1.mp3",
+    "G2.mp3",
+    "G3.mp3",
+    "G4.mp3",
+    "G5.mp3",
+    "G6.mp3",
+    "G7.mp3",
+    "Gs1.mp3",
+    "Gs2.mp3",
+    "Gs3.mp3",
+    "Gs4.mp3",
+    "Gs5.mp3",
+    "Gs6.mp3",
+    "Gs7.mp3",
+  ],
+  saxophone: [
+    "A4.mp3",
+    "A5.mp3",
+    "As3.mp3",
+    "As4.mp3",
+    "B3.mp3",
+    "B4.mp3",
+    "C4.mp3",
+    "C5.mp3",
+    "Cs3.mp3",
+    "Cs4.mp3",
+    "Cs5.mp3",
+    "D3.mp3",
+    "D4.mp3",
+    "D5.mp3",
+    "Ds3.mp3",
+    "Ds4.mp3",
+    "Ds5.mp3",
+    "E3.mp3",
+    "E4.mp3",
+    "E5.mp3",
+    "F3.mp3",
+    "F4.mp3",
+    "F5.mp3",
+    "Fs3.mp3",
+    "Fs4.mp3",
+    "Fs5.mp3",
+    "G3.mp3",
+    "G4.mp3",
+    "G5.mp3",
+    "Gs3.mp3",
+    "Gs4.mp3",
+    "Gs5.mp3",
+  ],
+  trombone: [
+    "As1.mp3",
+    "As2.mp3",
+    "As3.mp3",
+    "C3.mp3",
+    "C4.mp3",
+    "Cs2.mp3",
+    "Cs4.mp3",
+    "D3.mp3",
+    "D4.mp3",
+    "Ds2.mp3",
+    "Ds3.mp3",
+    "Ds4.mp3",
+    "F2.mp3",
+    "F3.mp3",
+    "F4.mp3",
+    "Gs2.mp3",
+    "Gs3.mp3",
+  ],
+  trumpet: [
+    "A3.mp3",
+    "A5.mp3",
+    "As4.mp3",
+    "C4.mp3",
+    "C6.mp3",
+    "D5.mp3",
+    "Ds4.mp3",
+    "F3.mp3",
+    "F4.mp3",
+    "F5.mp3",
+    "G4.mp3",
+  ],
+  tuba: [
+    "As1.mp3",
+    "As2.mp3",
+    "As3.mp3",
+    "D3.mp3",
+    "D4.mp3",
+    "Ds2.mp3",
+    "F1.mp3",
+    "F2.mp3",
+    "F3.mp3",
+  ],
+  violin: [
+    "A3.mp3",
+    "A4.mp3",
+    "A5.mp3",
+    "A6.mp3",
+    "C4.mp3",
+    "C5.mp3",
+    "C6.mp3",
+    "C7.mp3",
+    "E4.mp3",
+    "E5.mp3",
+    "E6.mp3",
+    "G3.mp3",
+    "G4.mp3",
+    "G5.mp3",
+    "G6.mp3",
+  ],
+  xylophone: [
+    "C5.mp3",
+    "C6.mp3",
+    "C7.mp3",
+    "C8.mp3",
+    "G4.mp3",
+    "G5.mp3",
+    "G6.mp3",
+    "G7.mp3",
+  ],
+};
+
 export const NOTES = [
   "C",
-  "#C",
+  "C#",
   "D",
-  "#D",
+  "D#",
   "E",
   "F",
-  "#F",
+  "F#",
   "G",
-  "#G",
+  "G#",
   "A",
-  "#A",
+  "A#",
   "B",
 ];
 
@@ -21,11 +517,18 @@ export const note2midi = (note: string) => {
 };
 
 export const midi2note = (index: number) => {
-  return `${NOTES[index % 12]}${Math.floor(index / 12 + 0.001) + 1}`;
+  return `${NOTES[index % 12][0]}${NOTES[index % 12][1] ?? ""}${
+    Math.floor(index / 12 + 0.001) - 1
+  }`;
 };
 
 export const midi2freq = (index: number) => {
   return 440 * Math.pow(2, (index - 69) / 12);
+};
+
+// As5 -> A#5 (European to American notation)
+export const europeanToAmerican = (note: string) => {
+  return note.replace(/([ACDFG])s(\d)/, "$1#$2");
 };
 
 /**
@@ -52,89 +555,45 @@ export const IonicScale = [
   [ChordMIDI.dim, ChordMIDI.m7b5],
 ];
 
-export function playNote(
-  ctx: AudioContext,
-  {
-    noteMIDI,
-    duration = 0.6,
-    type = "sawtooth",
-    attack = 0.01,
-    release = 0.12,
-    volume = 0.2,
-  }: any
-) {
-  const osc = ctx.createOscillator();
-  const gain = ctx.createGain();
-
-  osc.type = type;
-  osc.frequency.value = midi2freq(noteMIDI);
-  console.log(noteMIDI, osc.frequency.value);
-
-  // Simple pluck-ish envelope to avoid clicks
-  const now = ctx.currentTime;
-  const decay = 0.15;
-  const sustain = 0.25;
-
-  gain.gain.setValueAtTime(0.0001, now);
-  gain.gain.exponentialRampToValueAtTime(1.0, now + attack);
-  gain.gain.exponentialRampToValueAtTime(sustain, now + attack + decay);
-  gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
-
-  osc.connect(gain);
-  gain.connect(ctx.destination);
-
-  osc.start(now);
-  osc.stop(now + duration + release);
-  // const osc = ctx.createOscillator();
-  // osc.type = type;
-  // osc.frequency.value = midi2freq(noteMIDI);
-  // console.log(noteMIDI, osc.frequency.value);
-
-  // const gain = ctx.createGain();
-  // gain.gain.value = 0;
-
-  // osc.connect(gain).connect(ctx.destination);
-
-  // const t0 = ctx.currentTime;
-  // const t1 = t0 + duration;
-
-  // // ADSR-ish
-  // gain.gain.setValueAtTime(0, t0);
-  // gain.gain.linearRampToValueAtTime(volume, t0 + attack);
-  // gain.gain.setValueAtTime(volume, Math.max(t0 + attack, t1 - release));
-  // gain.gain.linearRampToValueAtTime(0, t1);
-
-  // osc.start(t0);
-  // osc.stop(t1 + 0.02);
+export function getChordMIDI(rootMIDI: number, chordMIDI: number[]) {
+  return chordMIDI.map((dif: number) => dif + rootMIDI);
 }
 
-/**
- * play chord by root midi and chord midi.
- */
-export async function playChord(
-  ctx: AudioContext,
-  { rootMIDI, chordMIDI, duration = 0.8, type = "sine", volume = 0.18 }: any
-) {
-  const master = ctx.createGain();
-  master.gain.value = 1;
-  master.connect(ctx.destination);
-
-  const t0 = ctx.currentTime;
-  const t1 = t0 + duration;
-
-  for (const dif of chordMIDI) {
-    const osc: any = ctx.createOscillator();
-    osc.type = type;
-    osc.frequency.value = midi2freq(rootMIDI + dif);
-    console.log(rootMIDI + dif, osc.frequency.value);
-
-    const gain = ctx.createGain();
-    gain.gain.setValueAtTime(0, t0);
-    gain.gain.linearRampToValueAtTime(volume, t0 + 0.01);
-    gain.gain.linearRampToValueAtTime(0, t1);
-
-    osc.connect(gain).connect(master);
-    osc.start(t0);
-    osc.stop(t1 + 0.02);
+export function play({ noteMIDI, duration = "2n", instrument }: any) {
+  let playingNotes = "";
+  if (instrument) {
+    playingNotes = noteMIDI.map((midi: number) => midi2note(midi)).join(", ");
+    instrument.triggerAttackRelease(
+      noteMIDI.map((midi: number) => midi2note(midi)),
+      duration
+    );
   }
+  return playingNotes;
+}
+
+export async function loadInstrument(name: string) {
+  let instrument = null;
+  try {
+    await Tone.start();
+
+    // Convert array to object mapping note names to filenames
+    // Convert European notation (As, Cs, Ds, Fs, Gs) to American notation (A#, C#, D#, F#, G#)
+    const urls = SAMPLE_FILES[name].reduce((acc: any, file: string) => {
+      const noteName = europeanToAmerican(file.replace(".mp3", ""));
+      acc[noteName] = file;
+      return acc;
+    }, {});
+
+    instrument = new Tone.Sampler({
+      urls: urls,
+      baseUrl: `${SAMPLE_BASE_URL}/${name}/`,
+      onload: () => {
+        console.log(`${name} loaded successfully`);
+      },
+    }).toDestination();
+  } catch (error) {
+    console.error("Error loading instrument:", error);
+    instrument = null;
+  }
+  return instrument;
 }
