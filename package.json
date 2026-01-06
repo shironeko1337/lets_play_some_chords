@@ -1,0 +1,31 @@
+{
+  "name": "chord-training",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@heroui/chip": "^2.2.24",
+    "@heroui/radio": "^2.3.29",
+    "@heroui/react": "^2.8.7",
+    "@heroui/slider": "^2.4.26",
+    "@heroui/system": "^2.4.25",
+    "@heroui/theme": "^2.4.25",
+    "framer-motion": "^12.24.0",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3",
+    "tailwindcss": "^4.1.18"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.1.18",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "typescript": "^5.6.3",
+    "vite": "^6.0.3"
+  }
+}
