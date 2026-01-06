@@ -1,11 +1,11 @@
-import React, { useCallback, useRef, useState } from "react";
+import React, { useRef, useState } from "react";
 import ReactDOM from "react-dom/client";
 import { Slider } from "@heroui/slider";
 import { Chip } from "@heroui/chip";
 import { RadioGroup, Radio } from "@heroui/radio";
 import { HeroUIProvider } from "@heroui/system";
 import "./index.css";
-import { IonicScale, midi2note, NOTES, playChord, playNote } from "./util";
+import { IonicScale, midi2note, playChord, playNote } from "./util";
 
 const SCALES = [
   { name: "Tonic", color: "primary" as const },
@@ -17,7 +17,7 @@ const SCALES = [
   { name: "Leading-tone", color: "secondary" as const },
 ];
 
-const CHORD_TYPES = ["Thirds", "Sevenths"];
+const CHORD_TYPES = ["Traid", "Seventh"];
 
 function App() {
   const [instrument, setInstrument] = useState("piano");
@@ -25,13 +25,6 @@ function App() {
   const [chordType, setChordTypes] = useState(1);
   const ctxRef = useRef(new AudioContext());
   const ctx = ctxRef.current;
-
-  const getNote = useCallback(
-    (index: number) => {
-      return NOTES[index % 12];
-    },
-    [rootMIDI]
-  );
 
   return (
     <HeroUIProvider>
