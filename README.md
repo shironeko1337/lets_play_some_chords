@@ -46,10 +46,42 @@ npm run build
 npm run preview
 ```
 
+## Deployment to GitHub Pages
+
+### Prerequisites
+
+1. Move the `samples` folder to the `public` folder:
+   ```bash
+   mv samples public/samples
+   ```
+   (This ensures the audio files are included in the build)
+
+### Option 1: Automatic Deployment (Recommended)
+
+1. Create a GitHub repository
+2. Push your code to the `main` branch
+3. Go to repository Settings → Pages
+4. Under "Build and deployment", select "GitHub Actions" as the source
+5. The site will automatically deploy on every push to `main`
+
+### Option 2: Manual Deployment
+
+```bash
+# Install dependencies
+npm install
+
+# Build and deploy
+npm run deploy
+```
+
+This will build the project and push it to the `gh-pages` branch.
+
 ## Usage
 
-1. Select an instrument (Piano or Guitar)
-2. Choose a chord type (Thirds or Sevenths)
-3. Adjust the root note using the slider
-4. Click on scale degree chips to play chords
-5. Click on note buttons to play individual notes
+1. Click "Start" to initialize the audio context
+2. Select an instrument from the dropdown (20 instruments available)
+3. Choose a chord type (Triad or Seventh)
+4. Adjust the root note using the slider (E2 to E5)
+5. Click on scale degree chips to play chords
+6. Click on note buttons to play individual notes
+7. Use the volume slider to adjust playback volume

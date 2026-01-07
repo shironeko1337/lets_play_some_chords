@@ -1,6 +1,6 @@
 import * as Tone from "tone";
 
-const SAMPLE_BASE_URL = "http://localhost:5173/samples";
+const SAMPLE_BASE_URL = "/samples";
 
 export const SAMPLE_FILES: any = {
   "bass-electric": [

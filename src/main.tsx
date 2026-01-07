@@ -41,13 +41,13 @@ const SCALES = [
   { name: "I (Tonic chord) 主和弦", color: "primary" as const, shift: 0 },
   {
     name: "ii (Supertonic chord) 上主和弦",
-    color: "secondary" as const,
+    color: "primary" as const,
     shift: 2,
   },
   { name: "iii (Mediant chord) 中和弦", color: "success" as const, shift: 4 },
   {
     name: "IV (Subdominant chord) 下属和弦",
-    color: "warning" as const,
+    color: "danger" as const,
     shift: 5,
   },
   { name: "V (Dominant chord) 属和弦", color: "danger" as const, shift: 7 },
@@ -75,9 +75,13 @@ function App() {
   const [volume, setVolume] = useState(-10); // Volume in dB
   const [instrumentLoading, setInstrumentLoading] = useState(false);
   const [playingNotes, setPlayingNotes] = useState("-");
+  const [guessNotes, setGuessNotes] = useState("-");
   const [highlightedNotes, setHighlightedNotes] = useState<any>([]);
   const [freeNotesMode, setFreeNotesMode] = useState(false);
   const [lastPlayedNotes, setLastPlayedNotes] = useState<any>([]);
+  const [randomPlayedChordIndex, setRandomPlayedChordIndex] = useState<
+    number | null
+  >(null);
 
   const handleStart = () => {
     setHasStarted(true);
@@ -104,11 +108,30 @@ function App() {
     }
   }, [volume, instrument]);
 
-  useEffect(() => {
-    if (freeNotesMode) {
-      setLastPlayedNotes([]);
+  const playChord = (index: number, shouldShowChordInfo: boolean) => {
+    const scale = SCALES[index];
+    setFreeNotesMode(false);
+    const chordRootMIDI = rootMIDI + scale.shift;
+    const noteMIDI = getChordMIDI(chordRootMIDI, IonicScale[index][chordType]);
+    const lastPlayedNotes = play({
+      noteMIDI,
+      instrument,
+    });
+    if (shouldShowChordInfo) {
+      setHighlightedNotes(noteMIDI);
+      setPlayingNotes(lastPlayedNotes);
     }
-  }, [freeNotesMode]);
+  };
+
+  const onGuessRandomPlayedChord = (guessIndex: number) => {
+    const name = SCALES[randomPlayedChordIndex!].name;
+    if (randomPlayedChordIndex !== guessIndex) {
+      setGuessNotes(`猜错了, 正确答案: ${name}`);
+    } else {
+      setGuessNotes(`猜对了, 正是 ${name}!`);
+    }
+    setRandomPlayedChordIndex(null);
+  };
 
   return (
     <HeroUIProvider>
@@ -226,21 +249,16 @@ function App() {
                     variant="flat"
                     onClick={() => {
                       if (scale.shift > -1) {
-                        setFreeNotesMode(false);
-                        const chordRootMIDI = rootMIDI + scale.shift;
-                        const noteMIDI = getChordMIDI(
-                          chordRootMIDI,
-                          IonicScale[index][chordType]
-                        );
-                        setHighlightedNotes(noteMIDI);
-                        setPlayingNotes(
-                          play({
-                            noteMIDI,
-                            instrument,
-                          })
-                        );
+                        let shouldShowChordInfo = true;
+                        if (randomPlayedChordIndex !== null) {
+                          onGuessRandomPlayedChord(index);
+                          shouldShowChordInfo = false;
+                        } else {
+                          setGuessNotes("");
+                        }
+                        playChord(index, shouldShowChordInfo);
                       } else {
-                        if (freeNotesMode && lastPlayedNotes) {
+                        if (lastPlayedNotes) {
                           setPlayingNotes(
                             play({
                               noteMIDI: lastPlayedNotes,
@@ -255,6 +273,33 @@ function App() {
                     {scale.name}
                   </Chip>
                 ))}
+              </div>
+
+              <div className="flex gap-4">
+                <button
+                  onClick={() => {
+                    playChord(0, true);
+                  }}
+                  className="px-4 py-2 text-lg font-bold bg-gray-400 text-white rounded-xl
+                         hover:bg-gray-600 active:scale-95 transition-all shadow-2xl"
+                >
+                  Play tonic
+                </button>
+                <button
+                  onClick={() => {
+                    let index = randomPlayedChordIndex;
+                    if (!randomPlayedChordIndex) {
+                      index = ~~(Math.random() * (SCALES.length - 2)) + 1;
+                      setRandomPlayedChordIndex(index);
+                      setGuessNotes('点击上方和弦进行猜测')
+                    }
+                    playChord(index!, false);
+                  }}
+                  className="px-4 py-2 text-lg font-bold bg-green-400 text-white rounded-xl
+                         hover:bg-blue-600 active:scale-95 transition-all shadow-2xl"
+                >
+                  Play a random chord from above (except tonic)
+                </button>
               </div>
 
               {/* Note Buttons */}
@@ -297,7 +342,8 @@ function App() {
               </div>
               <h2 className="text-lg font-semibold text-gray-800">Info</h2>
               <div>Last played notes: {playingNotes}</div>
-              <div>{instrumentLoading ? "Loading instruments..." : ""}</div>
+              {guessNotes ? <div>{guessNotes}</div> : null}
+              {instrumentLoading ? <div>Loading instruments...</div> : null}
             </div>
           </div>
         </div>
