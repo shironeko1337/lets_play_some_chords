@@ -4,5 +4,5 @@ import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
-  base: './', // Use relative paths for assets
+  base: '/lets_play_some_chords/', // GitHub Pages repo name
 });
