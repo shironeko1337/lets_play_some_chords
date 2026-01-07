@@ -1,6 +1,6 @@
 import * as Tone from "tone";
 
-const SAMPLE_BASE_URL = "/samples";
+const SAMPLE_BASE_URL = `${import.meta.env.BASE_URL}samples`;
 
 export const SAMPLE_FILES: any = {
   "bass-electric": [
