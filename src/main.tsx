@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import ReactDOM from "react-dom/client";
 import { Slider } from "@heroui/slider";
 import { Chip } from "@heroui/chip";
@@ -291,7 +291,7 @@ function App() {
                     if (!randomPlayedChordIndex) {
                       index = ~~(Math.random() * (SCALES.length - 2)) + 1;
                       setRandomPlayedChordIndex(index);
-                      setGuessNotes('点击上方和弦进行猜测')
+                      setGuessNotes("点击上方和弦进行猜测");
                     }
                     playChord(index!, false);
                   }}
