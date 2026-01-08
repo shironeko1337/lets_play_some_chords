@@ -2,6 +2,8 @@
 
 A web-based chord training application built with React and HeroUI for learning and practicing musical chords.
 
+[Demo](https://shironeko1337.github.io/lets_play_some_chords/)
+
 ## Tech Stack
 
 - **React** - UI framework
