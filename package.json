@@ -7,8 +7,8 @@
     "dev": "vite",
     "debug": "vite --open /debug.html",
     "build": "tsc && vite build",
-    "preview": "vite preview",
-    "deploy": "npm run build && gh-pages -d dist"
+    "preview": "npm run build && wrangler dev",
+    "deploy": "npm run build && wrangler deploy"
   },
   "dependencies": {
     "@heroui/chip": "^2.2.24",
@@ -25,12 +25,14 @@
     "tone": "^15.1.22"
   },
   "devDependencies": {
+    "@cloudflare/vite-plugin": "^1.37.1",
     "@tailwindcss/vite": "^4.1.18",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.4",
     "gh-pages": "^6.2.0",
     "typescript": "^5.6.3",
-    "vite": "^6.0.3"
+    "vite": "^6.0.3",
+    "wrangler": "^4.92.0"
   }
 }
