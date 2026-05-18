@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import ReactDOM from 'react-dom/client';
 import { SoundStream, Visualizer } from './model/sound_stream';
+// @ts-ignore — bundler resolves this correctly at runtime; TS misresolves due to same basename
 import { Debugger } from './debugger.js';
 
 function DebugApp() {
