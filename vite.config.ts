@@ -5,7 +5,7 @@ import { resolve } from 'path';
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
-  base: '/lets_play_some_chords/', // GitHub Pages repo name
+  base: process.env.GITHUB_PAGES ? '/lets_play_some_chords/' : '/',
   build: {
     rollupOptions: {
       input: {
