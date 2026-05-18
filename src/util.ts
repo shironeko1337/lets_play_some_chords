@@ -494,7 +494,10 @@ export const SAMPLE_FILES: any = {
   ],
 };
 
-export const NOTES = [
+export type Note = 'C' | 'C#' | 'D' | 'D#' | 'E' | 'F' | 'F#' | 'G' | 'G#' | 'A' | 'A#' | 'B' | string;
+export type NoteGroup = 1 | 2 | 3 | 4 | 5 | 6 | 7;
+
+export const NOTES: Note[] = [
   "C",
   "C#",
   "D",
@@ -517,9 +520,8 @@ export const note2midi = (note: string) => {
 };
 
 export const midi2note = (index: number) => {
-  return `${NOTES[index % 12][0]}${NOTES[index % 12][1] ?? ""}${
-    Math.floor(index / 12 + 0.001) - 1
-  }`;
+  return `${NOTES[index % 12][0]}${NOTES[index % 12][1] ?? ""}${Math.floor(index / 12 + 0.001) - 1
+    }`;
 };
 
 export const midi2freq = (index: number) => {
@@ -559,7 +561,7 @@ export function getChordMIDI(rootMIDI: number, chordMIDI: number[]) {
   return chordMIDI.map((dif: number) => dif + rootMIDI);
 }
 
-export function play({ noteMIDI, duration = "2n", instrument }: any) {
+export function play({noteMIDI, duration = "2n", instrument}: any) {
   let playingNotes = "";
   if (instrument) {
     playingNotes = noteMIDI.map((midi: number) => midi2note(midi)).join(", ");
@@ -597,3 +599,89 @@ export async function loadInstrument(name: string) {
   }
   return instrument;
 }
+
+// Chromatic scale degrees from root (semitone 0–11)
+const CHROMATIC_DEGREES = ['1', '2b', '2', '3b', '3', '4', '4#', '5', '6b', '6', '7b', '7'] as const;
+export type ChromaticDegree = typeof CHROMATIC_DEGREES[number];
+
+export function calcFlux(prevFreqBuf: Uint8Array | null, freqBuf: Uint8Array, threshold: number): number {
+  if (!prevFreqBuf) return 0;
+  let flux = 0;
+  for (let i = 0; i < freqBuf.length; i++) {
+    const diff = freqBuf[i] - prevFreqBuf[i];
+    if (diff > 0) flux += diff;
+  }
+  return flux > threshold ? flux : 0;
+}
+
+export function calcMean(buf: Float32Array, start = 0, end = buf.length): number {
+  let sum = 0;
+  for (let i = start; i < end; i++) sum += Math.abs(buf[i]);
+  return sum / (end - start);
+}
+
+export function msLog(val: unknown): string {
+  return Number(val).toFixed(2);
+}
+
+export function detectLogger(info: unknown, startIndex: number, endIndex: number, sampleRate = 44100): void {
+  console.log(
+    `Detected ${info} from ${msLog((startIndex / sampleRate) * 1000)}ms to ${msLog((1000 * endIndex) / sampleRate)}ms at [${startIndex},${endIndex})`,
+  );
+}
+
+/** Maps a frequency (Hz) to the nearest note name + octave, within a deviation threshold (%). */
+export function getNoteFromFreq(freq: number, deviationThreshold = 1): {level: string; deviation: number | undefined} {
+  const invalid = {level: '', deviation: undefined};
+  if (freq <= 0) return invalid;
+
+  const nExact = 12 * Math.log2(freq / 440.0);
+  const nClosest = Math.round(nExact);
+
+  const totalIdx = 4 * 12 + 9 + nClosest; // relative to A4 (index 57)
+  const octave = Math.floor(totalIdx / 12);
+  const noteIdx = ((totalIdx % 12) + 12) % 12;
+
+  const level = `${NOTES[noteIdx]}${octave}`;
+  const standardFreq = 440.0 * Math.pow(2, nClosest / 12);
+  const deviation = ((freq - standardFreq) / standardFreq) * 100;
+
+  if (Math.abs(deviation) <= deviationThreshold) {
+    return {level, deviation: parseFloat(deviation.toFixed(2))};
+  }
+  return invalid;
+}
+
+/**
+ * Returns the chromatic scale degree of `pitch` relative to `key` at octave `group`.
+ * Degree notation: 1 2b 2 3b 3 4 4# 5 6b 6 7b 7 (sharps written as # of the degree above)
+ * Second return value is octaves above the root octave.
+ *
+ * e.g. getPitchLevel('C3', 'C', 2) → ['1', 1]   (C3 is one octave above C2)
+ *      getPitchLevel('F#3', 'D#', 3) → ['3b', 0] (F#3 is a minor 3rd above D#3)
+ */
+export function getPitchLevel(pitch: string, key: Note, group: NoteGroup, _scale = 'Ionian'): [ChromaticDegree, number] {
+  const pitchNote = pitch.slice(0, -1) as Note;
+  const pitchOctave = parseInt(pitch.slice(-1));
+
+  const keySemitones = (group + 1) * 12 + NOTES.indexOf(key);
+  const pitchSemitones = (pitchOctave + 1) * 12 + NOTES.indexOf(pitchNote);
+
+  const diff = pitchSemitones - keySemitones;
+  const degreeIdx = ((diff % 12) + 12) % 12;
+  const octaveDiff = Math.floor(diff / 12);
+
+  return [CHROMATIC_DEGREES[degreeIdx], octaveDiff];
+}
+
+const _instrumentCache = new Map<string, Promise<any>>();
+
+export const playInstrumentNote = (note: Note, group: number, instrument: string) => {
+  if (!_instrumentCache.has(instrument)) {
+    _instrumentCache.set(instrument, loadInstrument(instrument));
+  }
+  _instrumentCache.get(instrument)!.then(sampler => {
+    if (!sampler) return;
+    play({noteMIDI: [note2midi(`${note}${group}`)], instrument: sampler, duration: '2n'});
+  });
+};

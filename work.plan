@@ -1,0 +1,15 @@
+tasks
+- [x] fix the frequency octave adjustment for single note detection
+- [x] organize code to move out of debugger
+- [x] try with human voice
+- show the pitch level based on an adjustable base note
+- add UI for training
+  - key and octave step setter
+  - clickable note chips list
+  - music instruments selector (can be midi)
+  - button for start real time voice streaming
+  - freq views for instrument
+  - freq views for sound
+  - merged views of two freq views showing the match
+
+
