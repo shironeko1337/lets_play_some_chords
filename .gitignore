@@ -46,6 +46,8 @@ coverage
 /samples
 
 .claude
+!.claude/skills
+.claude/settings.local.json
 
 # wrangler files
 .wrangler

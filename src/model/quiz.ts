@@ -1,5 +1,6 @@
 import * as Tone from 'tone'
 import {Note, NoteGroup, NOTES, midi2note, note2midi} from "../util"
+import {SoundSource} from '../types';
 
 const IONIC_SEMITONES = [0, 2, 4, 5, 7, 9, 11];
 
@@ -32,6 +33,12 @@ class Track {
   async load(path: string) {
     await Tone.start();
     this.player = new Tone.Player(path).toDestination();
+    await Tone.loaded();
+  }
+
+  async loadBuffer(buffer: AudioBuffer) {
+    await Tone.start();
+    this.player = new Tone.Player(buffer).toDestination();
     await Tone.loaded();
   }
 
@@ -253,7 +260,13 @@ export class Quiz {
   }
 
   test() {
-    return this.load('songs/test.mp3', 'songs/test.mmd');
+    // return this.load('songs/test.mp3', 'songs/test.mmd');
+    // return this.loadFromMMD({
+    //   sourceType: 'instrument', instrumentType: 'piano',
+    // }, 'songs/morning_steps.mmd');
+    return this.loadFromMMD({
+      sourceType: 'instrument', instrumentType: 'piano',
+    }, 'songs/playful_dance.mmd');
   }
 
   async load(musicPath: string, mmdPath: string) {
@@ -263,9 +276,19 @@ export class Quiz {
     this.track.timeBeforePlay = this.song.songSetting.shift;
     await this.track.load(musicPath);
   }
+
+  async loadFromMMD(soundSource: SoundSource, mmdPath: string, audioBuffer?: AudioBuffer) {
+    const mmd = await fetch(mmdPath).then(r => r.text());
+    this.song = decodeSongMd(mmd);
+    if (audioBuffer) {
+      this.track = new Track();
+      this.track.timeBeforePlay = this.song.songSetting.shift;
+      await this.track.loadBuffer(audioBuffer);
+    }
+  }
 }
 
-enum QuizEngineStatus {
+export enum QuizEngineStatus {
   LOADING,
   READY,
   COUNTDOWN,
@@ -315,7 +338,7 @@ export const decodeSongMd = (s: string): Song => {
   };
 
   let currentSetting: SectionSetting = applyConfig(
-    {shift:0, title: '', bpm: 80, defaultNoteGroup: 3, keyNote: 'C', keyNoteGroup: 3, timeSignatureTop: 4, timeSignatureBottom: 4},
+    {shift: 0, title: '', bpm: 80, defaultNoteGroup: 3, keyNote: 'C', keyNoteGroup: 3, timeSignatureTop: 4, timeSignatureBottom: 4},
     parseKeyValues(configStr)
   );
 

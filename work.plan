@@ -20,4 +20,15 @@ tasks
   - generated songs plug into existing quiz engine
   - note: model weights are ~20MB; MusicVAE is slow on CPU
 
+- [ ] build a pipeline of .gp to .mmd
+  - use guitarpro (Python) to parse .gp/.gpx files into bars, notes (MIDI pitch + duration), BPM, track names
+  - select melody track: prefer lead guitar or highest-pitched non-drum track; allow user override
+  - detect key: use key signature from file if present, otherwise apply Krumhansl-Schmuckler
+    algorithm on pitch class distribution, or let user specify manually
+  - convert to intermediate JSON: { key, bpm, sections, measures, notes: [{midiPitch, speed}] }
+  - convert MIDI pitch → jianpu scale degree (1-7) + octaveShift relative to detected key
+  - convert note duration (ticks) → speed value (1=quarter, 2=eighth, etc.) with tie handling
+    for notes that don't fit standard grid values
+  - emit .mmd: section markers from GP section markers, inline % bpm: X % for tempo changes
+  - data source: Guitar Pro files from MuseScore.com (export as .gpx) or direct .gp archives
 

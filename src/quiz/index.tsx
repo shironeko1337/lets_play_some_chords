@@ -2,10 +2,10 @@ import {useState, useRef, useEffect} from 'react';
 import {Modal, ModalContent, ModalHeader, ModalBody, ModalFooter} from '@heroui/react';
 import {Input} from '@heroui/react';
 import {SoundStream} from '../model/sound_stream';
-import {Quiz} from '../model/quiz';
+import {Quiz, QuizEngineStatus} from '../model/quiz';
 import {QuizCanvas} from './canvas';
-
-type GameStatus = 'ready' | 'loading' | 'countdown' | 'playing' | 'ended';
+import {SongGenerator} from './song_generator';
+import type {SoundSource} from '../types';
 
 const IconFreq = ({active}: {active: boolean}) => (
   <svg viewBox="0 0 16 16" className="w-4 h-4" aria-hidden>
@@ -21,7 +21,7 @@ const IconCog = () => (
 );
 
 export const QuizTab = () => {
-  const [gameStatus, setGameStatus] = useState<GameStatus>('ready');
+  const [gameStatus, setGameStatus] = useState<QuizEngineStatus>(QuizEngineStatus.READY);
   const [isConnected, setIsConnected] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [countdown, setCountdown] = useState<number | null>(null);
@@ -41,7 +41,7 @@ export const QuizTab = () => {
   }, []);
 
   useEffect(() => {
-    if (gameStatus !== 'playing') return;
+    if (gameStatus !== QuizEngineStatus.PLAYING) return;
     const song = quizRef.current?.song;
     if (!song) return;
     quizCanvasRef.current.update(
@@ -57,11 +57,11 @@ export const QuizTab = () => {
     streamRef.current?.stop();
     setIsConnected(false);
     setIsPaused(false);
-    setGameStatus('ended');
+    setGameStatus(QuizEngineStatus.END);
   };
 
   const handleTogglePause = () => {
-    if (gameStatus === 'countdown') {
+    if (gameStatus === QuizEngineStatus.COUNTDOWN) {
       setIsPaused(p => !p);
       return;
     }
@@ -78,7 +78,7 @@ export const QuizTab = () => {
 
   // initialise canvas + countdown value when entering countdown
   useEffect(() => {
-    if (gameStatus !== 'countdown') return;
+    if (gameStatus !== QuizEngineStatus.COUNTDOWN) return;
     const song = quizRef.current?.song;
     if (song) quizCanvasRef.current.update(song, () => 0, () => 0);
     setCountdown(3);
@@ -87,12 +87,12 @@ export const QuizTab = () => {
 
   // tick — pauses when isPaused, resumes from current value
   useEffect(() => {
-    if (gameStatus !== 'countdown' || isPaused || countdown === null || countdown === 0) return;
+    if (gameStatus !== QuizEngineStatus.COUNTDOWN || isPaused || countdown === null || countdown === 0) return;
     const id = setTimeout(() => {
       if (countdown <= 1) {
         quizRef.current?.track?.play();
         setCountdown(0);
-        setTimeout(() => { setGameStatus('playing'); setCountdown(null); }, 200);
+        setTimeout(() => { setGameStatus(QuizEngineStatus.PLAYING); setCountdown(null); }, 200);
       } else {
         setCountdown(countdown - 1);
       }
@@ -101,28 +101,33 @@ export const QuizTab = () => {
   }, [gameStatus, isPaused, countdown]);
 
   const handlePlay = async () => {
-    setGameStatus('loading');
+    setGameStatus(QuizEngineStatus.LOADING);
     await streamInitRef.current;
     const stream = streamRef.current!;
     const quiz = new Quiz();
     quizRef.current = quiz;
+
+    const soundSource: SoundSource = {sourceType: 'instrument', instrumentType: 'piano'};
+    const mmdPath = 'songs/morning_steps.mmd';
 
     await Promise.all([
       stream.initStream('device').then(() => {
         stream.onFrame = (pitch) => setIsConnected(pitch > 0);
         stream.start();
       }),
-      quiz.test(),
+      new SongGenerator().fromFile(mmdPath, soundSource).then(audioBuffer =>
+        quiz.loadFromMMD(soundSource, mmdPath, audioBuffer)
+      ),
     ]);
 
     if (quiz.track) quiz.track.onEnded = handleEnd;
-    setGameStatus('countdown');
+    setGameStatus(QuizEngineStatus.COUNTDOWN);
   };
 
-  const handleBack = () => setGameStatus('ready');
+  const handleBack = () => setGameStatus(QuizEngineStatus.READY);
 
-  const isOngoing = gameStatus === 'playing' || gameStatus === 'loading' || gameStatus === 'countdown';
-  const showCanvas = gameStatus === 'countdown' || gameStatus === 'playing' || gameStatus === 'ended';
+  const isOngoing = gameStatus === QuizEngineStatus.PLAYING || gameStatus === QuizEngineStatus.LOADING || gameStatus === QuizEngineStatus.COUNTDOWN;
+  const showCanvas = gameStatus === QuizEngineStatus.COUNTDOWN || gameStatus === QuizEngineStatus.PLAYING || gameStatus === QuizEngineStatus.END;
 
   return (
     <div className="relative min-h-64">
@@ -155,7 +160,7 @@ export const QuizTab = () => {
             width={800}
             height={800}
           />
-          {gameStatus === 'countdown' && countdown !== null && (
+          {gameStatus === QuizEngineStatus.COUNTDOWN && countdown !== null && (
             <div
               className={`absolute inset-0 flex items-center justify-center rounded-lg
                 transition-opacity duration-200 ${countdown === 0 ? 'opacity-0' : 'opacity-100'}`}
@@ -171,7 +176,7 @@ export const QuizTab = () => {
 
       {/* Center content */}
       <div className={`flex items-center justify-center ${showCanvas ? 'py-4' : 'min-h-64'}`}>
-        {gameStatus === 'ready' && (
+        {gameStatus === QuizEngineStatus.READY && (
           <button
             onClick={handlePlay}
             className="px-10 py-5 text-xl font-bold bg-blue-500 text-white rounded-2xl
@@ -180,10 +185,10 @@ export const QuizTab = () => {
             Play
           </button>
         )}
-        {gameStatus === 'loading' && (
+        {gameStatus === QuizEngineStatus.LOADING && (
           <span className="text-gray-400 text-lg animate-pulse">Loading…</span>
         )}
-        {(gameStatus === 'countdown' || gameStatus === 'playing') && (
+        {(gameStatus === QuizEngineStatus.COUNTDOWN || gameStatus === QuizEngineStatus.PLAYING) && (
           <div className="flex gap-4">
             <button
               onClick={handleTogglePause}
@@ -201,7 +206,7 @@ export const QuizTab = () => {
             </button>
           </div>
         )}
-        {gameStatus === 'ended' && (
+        {gameStatus === QuizEngineStatus.END && (
           <button
             onClick={handleBack}
             className="px-10 py-5 text-xl font-bold bg-gray-500 text-white rounded-2xl
