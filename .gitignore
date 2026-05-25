@@ -45,7 +45,7 @@ coverage
 # Samples (use public/samples instead)
 /samples
 
-.claude
+.claude/*
 !.claude/skills
 .claude/settings.local.json
 

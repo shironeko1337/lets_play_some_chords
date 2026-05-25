@@ -1,11 +1,10 @@
 import React, {useEffect, useRef, useState} from 'react';
-import {ChordStream, type Song} from './model/chord_stream';
+import {ChordStream, } from './model/chord_stream';
 import type {SoundStream} from './model/sound_stream';
 import {getPitchLevel, NOTES, type Note, type NoteGroup} from './util';
 
 type Props = {
   soundStream: SoundStream;
-  song?: Song;
   isStreaming?: boolean;
   onClickNote?: (note: Note, group: NoteGroup) => void;
 };
