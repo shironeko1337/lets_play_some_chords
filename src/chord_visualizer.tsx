@@ -130,7 +130,7 @@ function useSmoothDraw(
   }, [factor, loudnessRef]);
 }
 
-export const ChordStreamVisualizer = ({soundStream, song, isStreaming = false, onClickNote}: Props) => {
+export const ChordStreamVisualizer = ({soundStream, isStreaming = false, onClickNote}: Props) => {
   const chordStreamRef = useRef<ChordStream | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const freqCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -176,10 +176,9 @@ export const ChordStreamVisualizer = ({soundStream, song, isStreaming = false, o
 
   useEffect(() => {
     const chordStream = chordStreamRef.current;
-    if (!chordStream || !song) return;
-    chordStream.song = song;
+    if (!chordStream) return;
     chordStream.load(soundStream.config as any);
-  }, [song, soundStream]);
+  }, [soundStream]);
 
   const step = canvasW > 0 ? (canvasW + GAP) / 36 : GAP + 20;
   const rectW = step - GAP;

@@ -3,13 +3,11 @@ import {Select, SelectItem} from '@heroui/select';
 import {Tabs, Tab} from '@heroui/react';
 import {SoundStream, SoundStreamSourceType} from './model/sound_stream';
 import {ChordStreamVisualizer} from './chord_visualizer';
-import type {Song} from './model/chord_stream';
 import {SAMPLE_FILES, playInstrumentNote} from './util';
 import type {Note, NoteGroup} from './util';
 import {playChord, OSCILLATOR_INSTRUMENTS} from './midi_util';
 import type {OscillatorInstrument} from './midi_util';
-
-type PlaySourceType = 'instrument' | 'midi-wave';
+import type {PlaySourceType} from './types';
 
 const INSTRUMENT_NAMES = Object.keys(SAMPLE_FILES).map(key => ({
   key,
@@ -20,7 +18,6 @@ export const SoundVisualizer = () => {
   const audioRef = useRef<HTMLAudioElement>(null);
   const streamRef = useRef<SoundStream | null>(null);
   const [stream, setStream] = useState<SoundStream | null>(null);
-  const [song, setSong] = useState<Song | undefined>();
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
   const [selectedDeviceId, setSelectedDeviceId] = useState<string>('');
   const [isMonitoring, setIsMonitoring] = useState(false);
@@ -60,7 +57,6 @@ export const SoundVisualizer = () => {
     if (!file || !audio) return;
     if (audio.src) URL.revokeObjectURL(audio.src);
     audio.src = URL.createObjectURL(file);
-    setSong(undefined);
   };
 
   const handleToggle = async () => {
@@ -175,7 +171,6 @@ export const SoundVisualizer = () => {
         className={`w-full ${sourceType === 'file' ? '' : 'hidden'}`}
         onLoadedMetadata={() => {
           const audio = audioRef.current;
-          if (audio) setSong({totalTime: audio.duration * 1000});
         }}
         onPlay={() => {streamRef.current?.start(); setIsMonitoring(true);}}
         onPause={() => {streamRef.current?.stop(); setIsMonitoring(false);}}
@@ -185,7 +180,6 @@ export const SoundVisualizer = () => {
       {stream && (
         <ChordStreamVisualizer
           soundStream={stream}
-          song={song}
           isStreaming={isMonitoring}
           onClickNote={handleClickNote}
         />

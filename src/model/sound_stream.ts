@@ -88,6 +88,7 @@ export class SoundStream {
   visualizer?: Visualizer;
   chordStream?: ChordStream;
   debugCallback?: Function;
+  onFrame?: (pitch: number, clarity: number) => void;
   private _rafId?: number;
   private _source?: MediaStreamAudioSourceNode | MediaElementAudioSourceNode;
   private _deviceSource?: MediaStreamAudioSourceNode;
@@ -170,6 +171,7 @@ export class SoundStream {
       [`fftSize: ${this.config.fftSize}`],
     );
     this.visualizer?.updatePlot(this.waveBuffer, this.ctx.sampleRate / 2 / this.analyser.frequencyBinCount);
+    this.onFrame?.(pitch, clarity);
 
     this._rafId = requestAnimationFrame(this._update);
   };

@@ -1,14 +1,6 @@
 import {PitchDetector} from "pitchy";
 import {calcFlux, calcMean, detectLogger, getNoteFromFreq} from "../util";
 
-export type Song = {
-  totalTime: number;
-  bpm?: number;
-  scaleTop?: number;
-  scaleBottom?: number;
-  shift?: number;
-};
-
 export type Note = {
   pitch?: number;
   timestamp?: number; // in case we want to show the note in real time, we don't need timestamp
@@ -28,7 +20,6 @@ export type ChordMap = {
 };
 
 export class ChordStream {
-  song?: Song;
   map?: ChordMap;
   // currentNote?: Note;
   // pitchBuffer?: Float32Array<ArrayBuffer>;

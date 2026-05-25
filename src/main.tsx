@@ -1,5 +1,6 @@
 import {useEffect, useState} from "react";
 import {SoundVisualizer} from "./sound_visualizer";
+import {QuizTab} from "./quiz";
 import ReactDOM from "react-dom/client";
 import {Slider} from "@heroui/slider";
 import {Chip} from "@heroui/chip";
@@ -68,9 +69,8 @@ const SCALES = [
 const CHORD_TYPES = ["Traid", "Seventh"];
 
 function App() {
-  const [hasStarted, setHasStarted] = useState(false);
-  const [activeTab, setActiveTab] = useState<'visualize' | 'chords'>('visualize');
-  const [instrumentName, setInstrumentName] = useState<any>(null);
+  const [activeTab, setActiveTab] = useState<'visualize' | 'chords' | 'quiz'>('visualize');
+  const [instrumentName, setInstrumentName] = useState<any>("piano");
   const [instrument, setInstrument] = useState<any>(null);
   const [rootMIDI, setRootMIDI] = useState(52); // E3
   const [chordType, setChordTypes] = useState(0);
@@ -84,11 +84,10 @@ function App() {
   const [randomPlayedChordIndex, setRandomPlayedChordIndex] = useState<
     number | null
   >(null);
-
-  const handleStart = () => {
-    setHasStarted(true);
-    setInstrumentName("piano");
-  };
+  const [quizChordIndex, setQuizChordIndex] = useState<number | null>(null);
+  const [quizAnswered, setQuizAnswered] = useState(false);
+  const [quizCorrect, setQuizCorrect] = useState<boolean | null>(null);
+  const [quizScore, setQuizScore] = useState({correct: 0, total: 0});
 
   useEffect(() => {
     if (!instrumentName || instrumentLoading) return;
@@ -125,6 +124,22 @@ function App() {
     }
   };
 
+  const startQuizRound = () => {
+    const index = ~~(Math.random() * (SCALES.length - 1));
+    setQuizChordIndex(index);
+    setQuizAnswered(false);
+    setQuizCorrect(null);
+    playChord(index, false);
+  };
+
+  const onQuizGuess = (guessIndex: number) => {
+    if (quizAnswered || quizChordIndex === null) return;
+    const correct = guessIndex === quizChordIndex;
+    setQuizAnswered(true);
+    setQuizCorrect(correct);
+    setQuizScore(s => ({correct: s.correct + (correct ? 1 : 0), total: s.total + 1}));
+  };
+
   const onGuessRandomPlayedChord = (guessIndex: number) => {
     const name = SCALES[randomPlayedChordIndex!].name;
     if (randomPlayedChordIndex !== guessIndex) {
@@ -139,23 +154,11 @@ function App() {
     <HeroUIProvider>
       <div className="min-h-screen bg-gray-50 p-8">
         <div className="max-w-7xl mx-auto bg-white rounded-xl shadow-lg p-8 relative">
-          {/* Start Backdrop — chords tab only */}
-          {!hasStarted && activeTab === 'chords' && (
-            <div className="absolute inset-0 bg-black/30 backdrop-blur-sm rounded-xl flex items-center justify-center z-50">
-              <button
-                onClick={handleStart}
-                className="px-8 py-4 text-2xl font-bold bg-blue-500 text-white rounded-xl
-                         hover:bg-blue-600 active:scale-95 transition-all shadow-2xl"
-              >
-                Start
-              </button>
-            </div>
-          )}
-
           <div id="menu" className="flex gap-1 mb-6 border-b border-gray-200">
             {([
               {id: 'visualize', label: 'Visualize'},
               {id: 'chords',    label: 'Chord Training'},
+              {id: 'quiz',      label: 'Quiz'},
             ] as const).map(tab => (
               <button
                 key={tab.id}
@@ -371,6 +374,9 @@ function App() {
                 {instrumentLoading ? <div>Loading instruments...</div> : null}
               </div>
             </div>
+          <div id="quiz" className={activeTab === 'quiz' ? '' : 'hidden'}>
+            <QuizTab />
+          </div>
         </div>
       </div>
     </HeroUIProvider>

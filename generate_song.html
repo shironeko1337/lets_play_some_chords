@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Song Generator</title>
+  <style>
+    body { font-family: sans-serif; padding: 2rem; background: #f9fafb; }
+    h2 { color: #1e40af; }
+    label { display: block; margin-bottom: 0.5rem; font-size: 0.9rem; color: #374151; }
+    select { padding: 0.4rem 0.6rem; border-radius: 6px; border: 1px solid #d1d5db; font-size: 0.9rem; }
+    button { margin-top: 1rem; padding: 0.6rem 1.4rem; font-size: 1rem; background: #3b82f6; color: white; border: none; border-radius: 8px; cursor: pointer; }
+    button:hover { background: #2563eb; }
+    button:disabled { background: #93c5fd; cursor: not-allowed; }
+    #status { margin-top: 1rem; color: #555; font-size: 0.95rem; }
+  </style>
+</head>
+<body>
+  <h2>Song Generator — morning_steps.mmd</h2>
+
+  <div style="display:flex;gap:1.5rem;align-items:flex-end;">
+    <div>
+      <label for="source">Source type</label>
+      <select id="source">
+        <option value="instrument">Instrument (sample)</option>
+        <option value="midi-wave">MIDI Wave (oscillator)</option>
+      </select>
+    </div>
+    <div id="instrument-picker">
+      <label for="instrument">Instrument</label>
+      <select id="instrument">
+        <option>piano</option><option>guitar-acoustic</option><option>violin</option>
+        <option>flute</option><option>cello</option><option>harp</option>
+        <option>organ</option><option>trumpet</option><option>xylophone</option>
+      </select>
+    </div>
+    <div id="wave-picker" style="display:none">
+      <label for="wave">Waveform</label>
+      <select id="wave">
+        <option>sine</option><option>triangle</option><option>sawtooth</option><option>square</option>
+      </select>
+    </div>
+  </div>
+
+  <button id="btn">Generate &amp; Play</button>
+  <div id="status">Click to generate audio from morning_steps.mmd</div>
+
+  <script type="module" src="/src/quiz/song_generator_play.ts"></script>
+</body>
+</html>

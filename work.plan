@@ -2,14 +2,22 @@ tasks
 - [x] fix the frequency octave adjustment for single note detection
 - [x] organize code to move out of debugger
 - [x] try with human voice
-- show the pitch level based on an adjustable base note
-- add UI for training
-  - key and octave step setter
-  - clickable note chips list
-  - music instruments selector (can be midi)
-  - button for start real time voice streaming
-  - freq views for instrument
-  - freq views for sound
-  - merged views of two freq views showing the match
+- [x] show the pitch level based on an adjustable base note
+- [x] add UI for training
+- [ ] add basic rhythme and freq judging
+  - when judging turned on, create a sound stream for real time input
+  - only show the judging result on burst detected, which means don't judge the missed notes
+  - find the nearest note when burst is heard, and show color which ranges from green to light
+  - by default the final score is computed by the weighted rhythme difference and freq difference
+  - user can adjust the weight that rhythme difference contributes to the result and freq difference
+    contributes to the result in the settings
+  - do not show the numbered score, but store the result for further usage
+
+- [ ] generate song automatically
+  - use Magenta.js (Google, runs in browser via TensorFlow.js) for ML-based melody generation
+  - models: MusicRNN (seed + continue), MusicVAE (free-form sampling), MelodyRNN (full melody from scratch)
+  - output is NoteSequence (MIDI pitch + start/end times) → convert to scale degrees relative to song key → emit .mmd
+  - generated songs plug into existing quiz engine
+  - note: model weights are ~20MB; MusicVAE is slow on CPU
 
 
