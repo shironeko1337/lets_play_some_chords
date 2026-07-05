@@ -40,9 +40,31 @@ const SPEED_MAX = 2;
 const SPEED_STEP = 0.001;
 const DEFAULT_SPEED = 0.05;
 
-const wavePosition = (cx: number, cy: number, t: number, cycles: number) => {
+// Same four types Tone.Oscillator accepts — reused directly as the audio oscillator's `type`
+type WaveShape = "sine" | "square" | "triangle" | "sawtooth";
+const WAVE_SHAPES: WaveShape[] = ["sine", "square", "triangle", "sawtooth"];
+
+// All shapes are phase-aligned so they cross their baseline (ascending) at whole-numbered phase,
+// matching sine — otherwise the feature points would no longer visually mark "both waves at rest"
+const waveValue = (shape: WaveShape, phase: number): number => {
+  const x = phase - Math.floor(phase);
+  switch (shape) {
+    case "square":
+      return x < 0.5 ? 1 : -1;
+    case "triangle":
+      if (x < 0.25) return 4 * x;
+      if (x < 0.75) return 2 - 4 * x;
+      return 4 * x - 4;
+    case "sawtooth":
+      return x < 0.5 ? 2 * x : 2 * x - 2;
+    default:
+      return Math.sin(x * Math.PI * 2);
+  }
+};
+
+const wavePosition = (cx: number, cy: number, t: number, cycles: number, shape: WaveShape) => {
   const theta = t * Math.PI * 2 + ANGLE_OFFSET;
-  const r = BASE_RADIUS + RING_AMPLITUDE * Math.sin(cycles * Math.PI * 2 * t);
+  const r = BASE_RADIUS + RING_AMPLITUDE * waveValue(shape, cycles * t);
   return {x: cx + r * Math.cos(theta), y: cy + r * Math.sin(theta)};
 };
 
@@ -52,6 +74,7 @@ export const WaveCircle = () => {
   const [playTonicSound, setPlayTonicSound] = useState(false);
   const [playNoteSound, setPlayNoteSound] = useState(false);
   const [speed, setSpeed] = useState(DEFAULT_SPEED);
+  const [waveShape, setWaveShape] = useState<WaveShape>("sine");
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const speedRef = useRef(speed);
@@ -90,7 +113,7 @@ export const WaveCircle = () => {
     const drawWave = (cycles: number, color: string) => {
       ctx.beginPath();
       for (let i = 0; i <= samples; i++) {
-        const {x, y} = wavePosition(cx, cy, i / samples, cycles);
+        const {x, y} = wavePosition(cx, cy, i / samples, cycles, waveShape);
         if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
       }
       ctx.strokeStyle = color;
