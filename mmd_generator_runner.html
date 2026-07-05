@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>MMD Generator</title>
+  <style>
+    body { font-family: sans-serif; padding: 2rem; background: #f9fafb; max-width: 540px; }
+    h2 { color: #1e40af; }
+    label { display: block; margin-top: 1rem; margin-bottom: 0.25rem; font-size: 0.85rem; color: #374151; font-weight: 600; }
+    input, select { width: 100%; padding: 0.4rem 0.6rem; border-radius: 6px; border: 1px solid #d1d5db; font-size: 0.9rem; box-sizing: border-box; }
+    button { margin-top: 1.5rem; padding: 0.6rem 1.4rem; font-size: 1rem; background: #3b82f6; color: white; border: none; border-radius: 8px; cursor: pointer; }
+    button:hover { background: #2563eb; }
+    button:disabled { background: #93c5fd; cursor: not-allowed; }
+    #status { margin-top: 1rem; color: #555; font-size: 0.9rem; }
+    #output-wrap { margin-top: 1.5rem; display: none; }
+    #output-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem; }
+    #copy-btn { padding: 0.25rem 0.75rem; font-size: 0.8rem; background: #475569; color: white; border: none; border-radius: 6px; cursor: pointer; }
+    #copy-btn:hover { background: #334155; }
+    #output { background: #1e293b; color: #e2e8f0; padding: 1rem; border-radius: 8px; font-family: monospace; font-size: 0.85rem; white-space: pre; width: 100%; box-sizing: border-box; border: none; resize: vertical; min-height: 200px; }
+  </style>
+</head>
+<body>
+  <h2>MMD Generator</h2>
+
+  <label for="model">Model</label>
+  <select id="model">
+    <option value="music_vae">MusicVAE (free-form sampling)</option>
+    <option value="music_rnn">MusicRNN (seed continuation)</option>
+  </select>
+
+  <label for="bpm">BPM</label>
+  <input id="bpm" type="number" value="80" min="40" max="240" />
+
+  <label for="keyNote">Key note</label>
+  <input id="keyNote" type="text" value="C" placeholder="C, G, D, F, A …" />
+
+  <label for="keyNoteGroup">Key octave</label>
+  <input id="keyNoteGroup" type="number" value="4" min="1" max="7" />
+
+  <label for="temperature">Temperature (0–2)</label>
+  <input id="temperature" type="number" value="1.0" min="0" max="2" step="0.1" />
+
+  <label for="steps">Steps — multiples of 64 (64 = 4 bars, 192 = 12 bars)</label>
+  <input id="steps" type="number" value="64" min="16" max="512" step="16" />
+
+  <label for="title">Title</label>
+  <input id="title" type="text" value="Generated" />
+
+  <label for="defaultNoteGroup">Default note group (octave)</label>
+  <input id="defaultNoteGroup" type="number" value="4" min="1" max="7" />
+
+  <button id="btn">Generate</button>
+  <div id="status">Loading models…</div>
+  <div id="output-wrap">
+    <div id="output-header">
+      <span style="font-size:0.85rem;font-weight:600;color:#374151">Generated MMD</span>
+      <button id="copy-btn">Copy</button>
+    </div>
+    <textarea id="output" readonly></textarea>
+  </div>
+
+  <script type="module" src="/src/mmd_generator_runner.ts"></script>
+</body>
+</html>

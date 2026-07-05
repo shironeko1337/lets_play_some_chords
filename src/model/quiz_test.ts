@@ -8,7 +8,7 @@ vi.mock('tone', () => ({default: {}, Player: class { }, start: vi.fn(), loaded: 
 import {decodeSongMd} from './quiz'
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url))
-const mmd = readFileSync(resolve(__dirname, '../../songs/test.mmd'), 'utf-8')
+const mmd = readFileSync(resolve(__dirname, '../../public/songs/test.mmd'), 'utf-8')
 
 // key=C keyNoteGroup=4 defaultNoteGroup=3
 // Degree N at octave G: MIDI = note2midi('C4') + (G-4)*12 + IONIC[N-1]
@@ -156,6 +156,109 @@ describe('decodeSongMd — test.mmd', () => {
           expect(got.startTs).toBeCloseTo(exp.startTs, CLOSE)
         })
       })
+    })
+  })
+})
+
+// ---- new syntax tests (inline MMD strings) ----
+// key C4, defaultNoteGroup 3: degree 1 = C3, 2 = D3, 3 = E3, 4 = F3
+
+describe('triplet grouping — <[X,Y]notes>', () => {
+  // <[3,2]111>1-  →  3 triplet notes (speed=3/2) + half note = 2+2 = 4 beats
+  const song = decodeSongMd('key: C4\nbpm: 60\ndefaultNoteGroup: 3\n\n%%\n<[3,2]111>1-')
+  const notes = song.sections[0].measures[0].notes
+
+  it('produces 5 note slots', () => expect(notes).toHaveLength(5))
+
+  it('fills exactly 4 beats', () => {
+    const total = notes.reduce((s, n) => s + 1 / n.speed, 0)
+    expect(total).toBeCloseTo(4, 5)
+  })
+
+  it('triplet notes have speed 3/2', () => {
+    expect(notes[0].speed).toBeCloseTo(3 / 2, 5)
+    expect(notes[1].speed).toBeCloseTo(3 / 2, 5)
+    expect(notes[2].speed).toBeCloseTo(3 / 2, 5)
+  })
+
+  it('notes after triplet return to quarter speed', () => {
+    expect(notes[3].speed).toBe(1)
+    expect(notes[4].speed).toBe(1)
+  })
+
+  it('triplet note pitches are all C3', () => {
+    [0, 1, 2].forEach(i => {
+      expect(notes[i].note).toBe('C')
+      expect(notes[i].noteGroup).toBe(3)
+    })
+  })
+})
+
+describe('illegal nesting inside triplet — <[X,Y]...<>...>', () => {
+  it('logs a console error when < appears inside a triplet group', () => {
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    // <[3,2]11<2>1> — inner < while triplet is still counting (remaining=1) is illegal
+    decodeSongMd('key: C4\nbpm: 60\ndefaultNoteGroup: 3\n\n%%\n<[3,2]11<2>1>')
+    expect(spy).toHaveBeenCalledWith('Nesting inside a triplet group is not allowed')
+    spy.mockRestore()
+  })
+})
+
+describe('tonicPickup — prepends a tonic reference note to each section', () => {
+  const mmd = 'key: C4\nbpm: 60\ndefaultNoteGroup: 3\ntonicPickup: true\n\n%%\n[A]\n1234\n[B]\n3456'
+  const song = decodeSongMd(mmd)
+
+  it('adds one extra measure per section', () => {
+    expect(song.sections[0].measures).toHaveLength(2)
+    expect(song.sections[1].measures).toHaveLength(2)
+  })
+
+  it('pickup measure starts on the tonic (degree 1) regardless of section content', () => {
+    expect(song.sections[0].measures[0].notes[0].degree).toBe(1)
+    expect(song.sections[1].measures[0].notes[0].degree).toBe(1)
+  })
+
+  it('pickup measure fills the full beat budget with rests after the tonic', () => {
+    const notes = song.sections[0].measures[0].notes
+    expect(notes).toHaveLength(4)
+    expect(notes[0].silent).toBe(false)
+    expect(notes.slice(1).every(n => n.silent)).toBe(true)
+  })
+
+  it('original measure content is preserved after the pickup', () => {
+    expect(song.sections[0].measures[1].notes.map(n => n.degree)).toEqual([1, 2, 3, 4])
+    expect(song.sections[1].measures[1].notes.map(n => n.degree)).toEqual([3, 4, 5, 6])
+  })
+})
+
+describe('nested grouping — <<notes>>', () => {
+  // 1<<1234>>11  →  quarter + 4 sixteenths + quarter + quarter = 1+1+1+1 = 4 beats
+  const song = decodeSongMd('key: C4\nbpm: 60\ndefaultNoteGroup: 3\n\n%%\n1<<1234>>11')
+  const notes = song.sections[0].measures[0].notes
+
+  it('produces 7 notes', () => expect(notes).toHaveLength(7))
+
+  it('fills exactly 4 beats', () => {
+    const total = notes.reduce((s, n) => s + 1 / n.speed, 0)
+    expect(total).toBeCloseTo(4, 5)
+  })
+
+  it('first note is quarter speed', () => expect(notes[0].speed).toBe(1))
+
+  it('inner group notes are sixteenth speed', () => {
+    [1, 2, 3, 4].forEach(i => expect(notes[i].speed).toBe(4))
+  })
+
+  it('trailing notes are quarter speed', () => {
+    expect(notes[5].speed).toBe(1)
+    expect(notes[6].speed).toBe(1)
+  })
+
+  it('inner group pitches are C3 D3 E3 F3', () => {
+    const expected: [string, number][] = [['C', 3], ['D', 3], ['E', 3], ['F', 3]]
+    expected.forEach(([note, group], i) => {
+      expect(notes[i + 1].note).toBe(note)
+      expect(notes[i + 1].noteGroup).toBe(group)
     })
   })
 })

@@ -13,12 +13,13 @@ tasks
     contributes to the result in the settings
   - do not show the numbered score, but store the result for further usage
 
-- [ ] generate song automatically
-  - use Magenta.js (Google, runs in browser via TensorFlow.js) for ML-based melody generation
-  - models: MusicRNN (seed + continue), MusicVAE (free-form sampling), MelodyRNN (full melody from scratch)
-  - output is NoteSequence (MIDI pitch + start/end times) → convert to scale degrees relative to song key → emit .mmd
-  - generated songs plug into existing quiz engine
-  - note: model weights are ~20MB; MusicVAE is slow on CPU
+- [x] generate song automatically
+  - [x] use Magenta.js (Google, runs in browser via TensorFlow.js) for ML-based melody generation
+        models: MusicRNN (seed + continue), MusicVAE (free-form sampling), MelodyRNN (full melody from scratch)
+        output is NoteSequence (MIDI pitch + start/end times) → convert to scale degrees relative to song key → emit .mmd
+  - [x] generated songs plug into existing quiz engine
+        note: model weights are ~20MB; MusicVAE is slow on CPU
+  - [x] write scripted generator based on the idea of levy's flight
 
 - [ ] build a pipeline of .gp to .mmd
   - use guitarpro (Python) to parse .gp/.gpx files into bars, notes (MIDI pitch + duration), BPM, track names

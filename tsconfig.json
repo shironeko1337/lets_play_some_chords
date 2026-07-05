@@ -17,6 +17,6 @@
     "noFallthroughCasesInSwitch": true
   },
   "include": ["src"],
-  "exclude": ["src/model/quiz_test.ts"],
+  "exclude": ["src/model/quiz_test.ts","src/mmd_generator_runner.ts"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

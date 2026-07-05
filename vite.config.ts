@@ -11,6 +11,9 @@ export default defineConfig({
     include: ['src/**/*_test.ts'],
     exclude: ['src/quiz/song_generator_test.ts'],
   },
+  define: {
+    global: 'globalThis',
+  },
   base: process.env.GITHUB_PAGES ? '/lets_play_some_chords/' : '/',
   plugins: [react(), tailwindcss(), cloudflare()],
   build: {
@@ -19,6 +22,7 @@ export default defineConfig({
         main: resolve(__dirname, 'index.html'),
         debug: resolve(__dirname, 'debug.html'),
         generate_song: resolve(__dirname, 'generate_song.html'),
+        mmd_generator_runner: resolve(__dirname, 'mmd_generator_runner.html'),
       },
     },
   },

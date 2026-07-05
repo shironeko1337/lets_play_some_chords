@@ -69,6 +69,7 @@ export class QuizCanvas {
   private canvas!: HTMLCanvasElement;
   private rafId?: number;
   private song!: Song;
+  private _lastLoggedNote: SongNote | null = null;
 
   ease: EaseFn = (t) => t;
 
@@ -96,18 +97,25 @@ export class QuizCanvas {
     ctx.fillStyle = '#374151';
     ctx.textBaseline = 'top';
     ctx.fillText(formatTime(context.time), LOG_PAD, BAR_H + LOG_PAD);
+    this.logCurrentNote(context);
   }
 
-  renderOnce(song: Song) {
-    if (!this.canvas) return;
-    this.song = song;
-    const context: SongContext = {song, progress: 0, time: 0, activatedMeasuresRange: [0, 0], visibleDuration: VISIBLE_DURATION};
-    context.activatedMeasuresRange = getCurrentActivatedMeasure(song, context);
-    this.drawFrame(context);
+  private logCurrentNote(context: SongContext) {
+    const note = getCurrentNote(context.song, context.time);
+    if (!note || note === this._lastLoggedNote) return;
+    this._lastLoggedNote = note;
+    const acc = note.accidental === 1 ? '#' : note.accidental === -1 ? 'b' : '';
+    const oct = note.octaveShift
+      ? (note.octaveShift > 0 ? '^'.repeat(note.octaveShift) : 'v'.repeat(-note.octaveShift))
+      : '';
+    const jianpu = `${oct}${note.degree ?? '?'}${acc}`;
+    const noteName = note.note ? `${note.note}${note.noteGroup}` : '?';
+    console.log(`[note] ${jianpu}  (${noteName})`);
   }
 
   update(song: Song, getProgress: () => number, getTime: () => number) {
     this.song = song;
+    this._lastLoggedNote = null;
     const frame = () => {
       const progress = getProgress();
       const time = getTime();
@@ -342,6 +350,19 @@ export class QuizCanvas {
       this.rafId = undefined;
     }
   }
+}
+
+function getCurrentNote(song: Song, time: number): SongNote | null {
+  let best: SongNote | null = null;
+  for (const section of song.sections) {
+    for (const measure of section.measures) {
+      for (const note of measure.notes) {
+        if (note.silent || note.startTs === undefined) continue;
+        if (note.startTs <= time && (!best || note.startTs > best.startTs!)) best = note;
+      }
+    }
+  }
+  return best;
 }
 
 /**

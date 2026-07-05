@@ -7,6 +7,30 @@ import {QuizCanvas} from './canvas';
 import {SongGenerator} from './song_generator';
 import type {SoundSource} from '../types';
 
+const SONGS: {path: string; label: string}[] = [
+  {path: 'songs/jazz_progressions.mmd', label: 'Jazz Progressions'},
+  {path: 'songs/rock_progressions.mmd', label: 'Rock Progressions'},
+  {path: 'songs/progression_study.mmd', label: 'Progression Study'},
+  {path: 'songs/interval_training_345.mmd', label: 'Interval Training: 3rd & 4ths & 5ths'},
+  {path: 'songs/interval_training_45.mmd', label: 'Interval Training: 4ths & 5ths'},
+  {path: 'songs/interval_training.mmd', label: 'Interval Training'},
+  {path: 'songs/morning_steps.mmd', label: 'Morning Steps'},
+  {path: 'songs/wanderer.mmd', label: 'Wanderer'},
+  {path: 'songs/twilight.mmd', label: 'Twilight'},
+  {path: 'songs/playful_dance.mmd', label: 'Playful Dance'},
+  {path: 'songs/moonlit_path.mmd', label: 'Moonlit Path'},
+  {path: 'songs/river_flow.mmd', label: 'River Flow'},
+];
+
+function shuffle<T>(arr: T[]): T[] {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
 const IconFreq = ({active}: {active: boolean}) => (
   <svg viewBox="0 0 16 16" className="w-4 h-4" aria-hidden>
     <circle cx="8" cy="8" r="6" fill={active ? '#22c55e' : '#9ca3af'} />
@@ -27,6 +51,8 @@ export const QuizTab = () => {
   const [countdown, setCountdown] = useState<number | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [audioSource, setAudioSource] = useState('');
+  const [songs] = useState(() => shuffle(SONGS));
+  const [selectedSong, setSelectedSong] = useState(songs[0].path);
 
   const streamRef = useRef<SoundStream | null>(null);
   const streamInitRef = useRef<Promise<void> | null>(null);
@@ -92,13 +118,33 @@ export const QuizTab = () => {
       if (countdown <= 1) {
         quizRef.current?.track?.play();
         setCountdown(0);
-        setTimeout(() => { setGameStatus(QuizEngineStatus.PLAYING); setCountdown(null); }, 200);
+        setTimeout(() => {setGameStatus(QuizEngineStatus.PLAYING); setCountdown(null);}, 200);
       } else {
         setCountdown(countdown - 1);
       }
     }, 1000);
     return () => clearTimeout(id);
   }, [gameStatus, isPaused, countdown]);
+
+  const togglePauseRef = useRef(handleTogglePause);
+  const handleEndRef = useRef(handleEnd);
+  togglePauseRef.current = handleTogglePause;
+  handleEndRef.current = handleEnd;
+
+  useEffect(() => {
+    if (gameStatus !== QuizEngineStatus.PLAYING && gameStatus !== QuizEngineStatus.COUNTDOWN) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      if (e.code === 'Space') {
+        e.preventDefault();
+        togglePauseRef.current();
+      } else if (e.code === 'Escape') {
+        handleEndRef.current();
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [gameStatus]);
 
   const handlePlay = async () => {
     setGameStatus(QuizEngineStatus.LOADING);
@@ -108,15 +154,14 @@ export const QuizTab = () => {
     quizRef.current = quiz;
 
     const soundSource: SoundSource = {sourceType: 'instrument', instrumentType: 'piano'};
-    const mmdPath = 'songs/morning_steps.mmd';
-
+    const generator = new SongGenerator();
     await Promise.all([
       stream.initStream('device').then(() => {
         stream.onFrame = (pitch) => setIsConnected(pitch > 0);
         stream.start();
       }),
-      new SongGenerator().fromFile(mmdPath, soundSource).then(audioBuffer =>
-        quiz.loadFromMMD(soundSource, mmdPath, audioBuffer)
+      generator.fromFile(selectedSong, soundSource).then(buf =>
+        quiz.loadFromMMD(soundSource, selectedSong, buf)
       ),
     ]);
 
@@ -155,7 +200,7 @@ export const QuizTab = () => {
       {showCanvas && (
         <div className="relative mt-10">
           <canvas
-            ref={(el) => { if (el) quizCanvasRef.current.init(el); }}
+            ref={(el) => {if (el) quizCanvasRef.current.init(el);}}
             className="rounded-lg bg-gray-100 w-full"
             width={800}
             height={800}
@@ -177,13 +222,24 @@ export const QuizTab = () => {
       {/* Center content */}
       <div className={`flex items-center justify-center ${showCanvas ? 'py-4' : 'min-h-64'}`}>
         {gameStatus === QuizEngineStatus.READY && (
-          <button
-            onClick={handlePlay}
-            className="px-10 py-5 text-xl font-bold bg-blue-500 text-white rounded-2xl
-                       hover:bg-blue-600 active:scale-95 transition-all shadow-lg"
-          >
-            Play
-          </button>
+          <div className="flex flex-col items-center gap-4">
+            <select
+              value={selectedSong}
+              onChange={e => setSelectedSong(e.target.value)}
+              className="px-4 py-2 border border-gray-300 rounded-lg text-sm bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400 cursor-pointer"
+            >
+              {songs.map(s => (
+                <option key={s.path} value={s.path}>{s.label}</option>
+              ))}
+            </select>
+            <button
+              onClick={handlePlay}
+              className="px-10 py-5 text-xl font-bold bg-blue-500 text-white rounded-2xl
+                         hover:bg-blue-600 active:scale-95 transition-all shadow-lg"
+            >
+              Play
+            </button>
+          </div>
         )}
         {gameStatus === QuizEngineStatus.LOADING && (
           <span className="text-gray-400 text-lg animate-pulse">Loading…</span>

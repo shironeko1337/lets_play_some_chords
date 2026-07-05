@@ -1,6 +1,8 @@
 import {useEffect, useState} from "react";
 import {SoundVisualizer} from "./sound_visualizer";
 import {QuizTab} from "./quiz";
+import {DummyPlayer} from "./quiz/dummy_player";
+import {WaveCircle} from "./wave_circle";
 import ReactDOM from "react-dom/client";
 import {Slider} from "@heroui/slider";
 import {Chip} from "@heroui/chip";
@@ -69,7 +71,7 @@ const SCALES = [
 const CHORD_TYPES = ["Traid", "Seventh"];
 
 function App() {
-  const [activeTab, setActiveTab] = useState<'visualize' | 'chords' | 'quiz'>('visualize');
+  const [activeTab, setActiveTab] = useState<'visualize' | 'chords' | 'quiz' | 'trainer' | 'wavecircle'>('visualize');
   const [instrumentName, setInstrumentName] = useState<any>("piano");
   const [instrument, setInstrument] = useState<any>(null);
   const [rootMIDI, setRootMIDI] = useState(52); // E3
@@ -159,6 +161,8 @@ function App() {
               {id: 'visualize', label: 'Visualize'},
               {id: 'chords',    label: 'Chord Training'},
               {id: 'quiz',      label: 'Quiz'},
+              {id: 'trainer',   label: 'Interval Trainer'},
+              {id: 'wavecircle', label: 'Wave Circle'},
             ] as const).map(tab => (
               <button
                 key={tab.id}
@@ -376,6 +380,12 @@ function App() {
             </div>
           <div id="quiz" className={activeTab === 'quiz' ? '' : 'hidden'}>
             <QuizTab />
+          </div>
+          <div id="trainer" className={activeTab === 'trainer' ? '' : 'hidden'}>
+            <DummyPlayer />
+          </div>
+          <div id="wavecircle" className={activeTab === 'wavecircle' ? '' : 'hidden'}>
+            <WaveCircle />
           </div>
         </div>
       </div>

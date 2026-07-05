@@ -154,7 +154,7 @@ export class Song {
   }
 }
 
-type SongSetting = {
+export type SongSetting = {
   shift: number;
   title: string
   bpm: number
@@ -163,6 +163,7 @@ type SongSetting = {
   keyNoteGroup?: NoteGroup
   timeSignatureTop?: number
   timeSignatureBottom?: number
+  tonicPickup?: boolean
 }
 
 type SectionSetting = SongSetting & {
@@ -259,14 +260,25 @@ export class Quiz {
   constructor() {
   }
 
-  test() {
-    // return this.load('songs/test.mp3', 'songs/test.mmd');
-    // return this.loadFromMMD({
-    //   sourceType: 'instrument', instrumentType: 'piano',
-    // }, 'songs/morning_steps.mmd');
-    return this.loadFromMMD({
-      sourceType: 'instrument', instrumentType: 'piano',
-    }, 'songs/playful_dance.mmd');
+  async test(generate: (mmdPath: string, soundSource: SoundSource) => Promise<AudioBuffer>) {
+    const songs = [
+      // 'songs/morning_steps.mmd',
+      // 'songs/wanderer.mmd',
+      // 'songs/twilight.mmd',
+      // 'songs/playful_dance.mmd',
+      // 'songs/moonlit_path.mmd',
+      // 'songs/river_flow.mmd',
+      // 'songs/progression_study.mmd',
+      'songs/jazz_progressions.mmd',
+      // 'songs/rock_progressions.mmd',
+      // 'songs/interval_training_45.mmd',
+      // 'songs/interval_training_23.mmd',
+      // 'songs/generated.mmd',
+    ];
+    const soundSource: SoundSource = {sourceType: 'instrument', instrumentType: 'piano'};
+    const mmdPath = songs[Math.floor(Math.random() * songs.length)];
+    const audioBuffer = await generate(mmdPath, soundSource);
+    await this.loadFromMMD(soundSource, mmdPath, audioBuffer);
   }
 
   async load(musicPath: string, mmdPath: string) {
@@ -334,6 +346,7 @@ export const decodeSongMd = (s: string): Song => {
     if (config.timeSignatureTop !== undefined) result.timeSignatureTop = parseInt(config.timeSignatureTop);
     if (config.timeSignatureBottom !== undefined) result.timeSignatureBottom = parseInt(config.timeSignatureBottom);
     if (config.shift !== undefined) result.shift = parseFloat(config.shift);
+    if (config.tonicPickup !== undefined) result.tonicPickup = config.tonicPickup === 'true';
     return result;
   };
 
@@ -345,8 +358,18 @@ export const decodeSongMd = (s: string): Song => {
   const song = new Song(currentSetting);
   let currentSection: SongSection | null = null;
   let currentTs = 0;
+  const addTonicPickup = (section: SongSection) => {
+    const measure = song.addMeasure(section, currentTs, currentSetting.bpm);
+    const restBeats = Math.max(0, Math.round(measure.quaterNoteCount) - 1);
+    lastNote = song.addNotes(measure, '1' + 'x'.repeat(restBeats), lastNote) ?? lastNote;
+    currentTs += measure.quaterNoteCount * 60 / measure.bpm;
+  };
+
   const ensureSection = () => {
-    if (!currentSection) currentSection = song.addSection(currentSetting, currentTs);
+    if (!currentSection) {
+      currentSection = song.addSection(currentSetting, currentTs);
+      if (currentSetting.tonicPickup) addTonicPickup(currentSection);
+    }
     return currentSection;
   };
 
@@ -384,6 +407,7 @@ export const decodeSongMd = (s: string): Song => {
     if (sectionMatch) {
       currentSetting = {...currentSetting, name: sectionMatch[1]};
       currentSection = song.addSection(currentSetting, currentTs);
+      if (currentSetting.tonicPickup) addTonicPickup(currentSection);
       continue;
     }
 
@@ -404,25 +428,49 @@ export const decodeSongMd = (s: string): Song => {
 export const decodeNotesExpression = (s: string, previousNote: SongNote, defaultNoteGroup: number, keyNote: Note, keyNoteGroup: NoteGroup, measure: SongMeasure) => {
   const cleaned = s.replace(/\/\/.*$/, '').replace(/\s/g, '');
 
-  const regex = /[<>]|\-|x|[v\^]*\d#?b?/g;
+  const regex = /[<>]|\-|x|\[\d+,\d+\]|[v^]*\d[#b]?/g;
   const notes: SongNote[] = [];
   let lastIndex = 0;
-  let baseSpeed = 1;
+
+  const speedStack: number[] = [];
   let speed = 1;
+  let tripletSavedSpeed: number | null = null;
+  let tripletRemaining = 0;
+
   let match: RegExpExecArray | null;
   while ((match = regex.exec(cleaned)) !== null) {
     if (match.index !== lastIndex) {
       console.error(`Unexpected token at position ${lastIndex}: "${cleaned.slice(lastIndex, match.index)}"`);
     }
-    if (match[0] === '<') {
-      speed = baseSpeed * 2;
-    } else if (match[0] === '>') {
-      speed = baseSpeed;
+    const token = match[0];
+    if (token === '<') {
+      if (tripletRemaining > 0) {
+        console.error('Nesting inside a triplet group is not allowed');
+      }
+      speedStack.push(speed);
+      speed *= 2;
+    } else if (token === '>') {
+      speed = speedStack.pop() ?? 1;
+    } else if (token[0] === '[') {
+      const comma = token.indexOf(',');
+      const x = parseInt(token.slice(1, comma));
+      const y = parseInt(token.slice(comma + 1, -1));
+      const prevSpeed = speedStack.length > 0 ? speedStack[speedStack.length - 1] : 1;
+      tripletSavedSpeed = speed;
+      speed = prevSpeed * x / y;
+      tripletRemaining = x;
     } else {
       const prev = notes.length > 0 ? notes[notes.length - 1] : previousNote;
-      const note = decodeNoteExpresssion(match[0], prev, defaultNoteGroup, keyNote, keyNoteGroup, measure);
+      const note = decodeNoteExpresssion(token, prev, defaultNoteGroup, keyNote, keyNoteGroup, measure);
       note.speed = speed;
       notes.push(note);
+      if (tripletRemaining > 0) {
+        tripletRemaining--;
+        if (tripletRemaining === 0 && tripletSavedSpeed !== null) {
+          speed = tripletSavedSpeed;
+          tripletSavedSpeed = null;
+        }
+      }
     }
     lastIndex = regex.lastIndex;
   }
