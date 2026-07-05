@@ -74,7 +74,7 @@ export const WaveCircle = () => {
   const [playTonicSound, setPlayTonicSound] = useState(false);
   const [playNoteSound, setPlayNoteSound] = useState(false);
   const [speed, setSpeed] = useState(DEFAULT_SPEED);
-  const [waveShape, setWaveShape] = useState<WaveShape>("sine");
+  const [waveShape, setWaveShape] = useState<WaveShape>("triangle");
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const speedRef = useRef(speed);
@@ -82,9 +82,15 @@ export const WaveCircle = () => {
   const tonicOscRef = useRef<Tone.Oscillator | null>(null);
   const noteOscRef = useRef<Tone.Oscillator | null>(null);
 
+  const waveShapeRef = useRef(waveShape);
+
   useEffect(() => {
     speedRef.current = speed;
   }, [speed]);
+
+  useEffect(() => {
+    waveShapeRef.current = waveShape;
+  }, [waveShape]);
 
   const interval = INTERVALS.find(i => i.semitones === semitones)!;
   const [p, q] = interval.ratio;
@@ -136,7 +142,7 @@ export const WaveCircle = () => {
 
     if (pointT !== undefined) {
       const drawPoint = (cycles: number, color: string) => {
-        const {x, y} = wavePosition(cx, cy, pointT, cycles);
+        const {x, y} = wavePosition(cx, cy, pointT, cycles, waveShape);
         ctx.beginPath();
         ctx.arc(x, y, POINT_RADIUS, 0, Math.PI * 2);
         ctx.fillStyle = color;
@@ -150,11 +156,11 @@ export const WaveCircle = () => {
     }
   };
 
-  // static picture whenever the note changes and the point isn't animating
+  // static picture whenever the note or wave shape changes and the point isn't animating
   useEffect(() => {
     if (!showWavePoint) render();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [semitones, showWavePoint]);
+  }, [semitones, showWavePoint, waveShape]);
 
   // wave point animation — always restarts from 12 o'clock when (re)enabled
   useEffect(() => {
@@ -178,16 +184,16 @@ export const WaveCircle = () => {
       render();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showWavePoint, semitones]);
+  }, [showWavePoint, semitones, waveShape]);
 
-  // audible sine tone for the tonic
+  // audible tone for the tonic
   useEffect(() => {
     if (!playTonicSound) return;
     let cancelled = false;
     (async () => {
       await Tone.start();
       if (cancelled) return;
-      tonicOscRef.current = new Tone.Oscillator(TONIC_HZ * speedRef.current, "sine").toDestination().start();
+      tonicOscRef.current = new Tone.Oscillator(TONIC_HZ * speedRef.current, waveShapeRef.current).toDestination().start();
     })();
     return () => {
       cancelled = true;
@@ -196,14 +202,14 @@ export const WaveCircle = () => {
     };
   }, [playTonicSound]);
 
-  // audible sine tone for the selected note
+  // audible tone for the selected note
   useEffect(() => {
     if (!playNoteSound) return;
     let cancelled = false;
     (async () => {
       await Tone.start();
       if (cancelled) return;
-      noteOscRef.current = new Tone.Oscillator(TONIC_HZ * (p / q) * speedRef.current, "sine").toDestination().start();
+      noteOscRef.current = new Tone.Oscillator(TONIC_HZ * (p / q) * speedRef.current, waveShapeRef.current).toDestination().start();
     })();
     return () => {
       cancelled = true;
@@ -213,25 +219,44 @@ export const WaveCircle = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [playNoteSound, semitones]);
 
-  // live pitch update as the speed slider (or note) changes while sound is on
+  // live pitch/timbre update as the speed slider, note, or wave shape changes while sound is on
   useEffect(() => {
-    if (tonicOscRef.current) tonicOscRef.current.frequency.value = TONIC_HZ * speed;
-    if (noteOscRef.current) noteOscRef.current.frequency.value = TONIC_HZ * (p / q) * speed;
-  }, [speed, semitones, p, q]);
+    if (tonicOscRef.current) {
+      tonicOscRef.current.frequency.value = TONIC_HZ * speed;
+      tonicOscRef.current.type = waveShape;
+    }
+    if (noteOscRef.current) {
+      noteOscRef.current.frequency.value = TONIC_HZ * (p / q) * speed;
+      noteOscRef.current.type = waveShape;
+    }
+  }, [speed, semitones, p, q, waveShape]);
 
   return (
     <div className="flex flex-col items-center gap-4 py-4">
-      <select
-        value={semitones}
-        onChange={e => setSemitones(Number(e.target.value))}
-        className="px-4 py-2 border border-gray-300 rounded-lg text-sm bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400 cursor-pointer"
-      >
-        {INTERVALS.map(i => (
-          <option key={i.semitones} value={i.semitones}>
-            {i.noteName} — {i.label} ({i.ratio[0]}:{i.ratio[1]})
-          </option>
-        ))}
-      </select>
+      <div className="flex items-center gap-3">
+        <select
+          value={semitones}
+          onChange={e => setSemitones(Number(e.target.value))}
+          className="px-4 py-2 border border-gray-300 rounded-lg text-sm bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400 cursor-pointer"
+        >
+          {INTERVALS.map(i => (
+            <option key={i.semitones} value={i.semitones}>
+              {i.noteName} — {i.label} ({i.ratio[0]}:{i.ratio[1]})
+            </option>
+          ))}
+        </select>
+        <select
+          value={waveShape}
+          onChange={e => setWaveShape(e.target.value as WaveShape)}
+          className="px-4 py-2 border border-gray-300 rounded-lg text-sm bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400 cursor-pointer"
+        >
+          {WAVE_SHAPES.map(shape => (
+            <option key={shape} value={shape}>
+              {shape[0].toUpperCase() + shape.slice(1)} wave
+            </option>
+          ))}
+        </select>
+      </div>
       <canvas ref={canvasRef} width={480} height={480} className="rounded-lg bg-gray-50" />
       <div className="flex flex-col items-center gap-2">
         <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
@@ -255,7 +280,7 @@ export const WaveCircle = () => {
             step={SPEED_STEP}
             value={speed}
             onChange={e => setSpeed(Number(e.target.value))}
-            className="w-80"
+            className="w-[640px] max-w-[90vw]"
           />
         </label>
       </div>
